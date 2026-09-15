@@ -1,8 +1,46 @@
-plugins { id 'com.android.application'; id 'com.google.gms.google-services' }
-android { namespace 'com.lacoste.verification'; compileSdk 33
- defaultConfig { applicationId 'com.lacoste.verification'; minSdk 23; targetSdk 33; versionCode 1; versionName '1.0' }
+plugins { id 'com.android.application'; id 'com.google.gms.google-services'; id 'org.jetbrains.kotlin.android' version '1.8.10' }
+
+android {
+ namespace 'com.lacoste.verification'
+ compileSdk 33
+ defaultConfig {
+   applicationId 'com.lacoste.verification'
+   minSdk 23
+   targetSdk 33
+   versionCode 1
+   versionName '1.0'
+ }
  buildFeatures { buildConfig true }
  def firebaseApiKey=project.findProperty('FIREBASE_API_KEY')?:''; def firebaseAppId=project.findProperty('FIREBASE_APP_ID')?:''; def firebaseProjectId=project.findProperty('FIREBASE_PROJECT_ID')?:''; def firebaseSenderId=project.findProperty('FIREBASE_MESSAGING_SENDER_ID')?:''
- buildTypes { debug { buildConfigField 'String','FIREBASE_API_KEY',"\"${firebaseApiKey}\""; buildConfigField 'String','FIREBASE_APP_ID',"\"${firebaseAppId}\""; buildConfigField 'String','FIREBASE_PROJECT_ID',"\"${firebaseProjectId}\""; buildConfigField 'String','FIREBASE_MESSAGING_SENDER_ID',"\"${firebaseSenderId}\"" }; release { minifyEnabled false; buildConfigField 'String','FIREBASE_API_KEY',"\"${firebaseApiKey}\""; buildConfigField 'String','FIREBASE_APP_ID',"\"${firebaseAppId}\""; buildConfigField 'String','FIREBASE_PROJECT_ID',"\"${firebaseProjectId}\""; buildConfigField 'String','FIREBASE_MESSAGING_SENDER_ID',"\"${firebaseSenderId}\"" } }
+ buildTypes {
+  debug {
+   buildConfigField 'String','FIREBASE_API_KEY',"\"${firebaseApiKey}\""
+   buildConfigField 'String','FIREBASE_APP_ID',"\"${firebaseAppId}\""
+   buildConfigField 'String','FIREBASE_PROJECT_ID',"\"${firebaseProjectId}\""
+   buildConfigField 'String','FIREBASE_MESSAGING_SENDER_ID',"\"${firebaseSenderId}\""
+  }
+  release {
+   minifyEnabled false
+   buildConfigField 'String','FIREBASE_API_KEY',"\"${firebaseApiKey}\""
+   buildConfigField 'String','FIREBASE_APP_ID',"\"${firebaseAppId}\""
+   buildConfigField 'String','FIREBASE_PROJECT_ID',"\"${firebaseProjectId}\""
+   buildConfigField 'String','FIREBASE_MESSAGING_SENDER_ID',"\"${firebaseSenderId}\""
+  }
+ }
 }
-dependencies { implementation 'androidx.appcompat:appcompat:1.6.1'; implementation 'androidx.core:core:1.10.1'; implementation platform('com.google.firebase:firebase-bom:32.8.1'); implementation 'com.google.firebase:firebase-messaging' }
+
+configurations.all {
+    resolutionStrategy {
+        force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.10'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.10'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.10'
+    }
+}
+
+dependencies {
+ implementation 'androidx.appcompat:appcompat:1.6.1'
+ implementation 'androidx.core:core:1.10.1'
+ implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.10'
+ implementation platform('com.google.firebase:firebase-bom:32.8.1')
+ implementation 'com.google.firebase:firebase-messaging'
+}

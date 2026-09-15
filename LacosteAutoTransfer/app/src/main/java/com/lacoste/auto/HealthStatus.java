@@ -1,0 +1,6 @@
+package com.lacoste.auto;
+import android.content.Context;
+import android.accessibilityservice.AccessibilityServiceInfo;
+import android.view.accessibility.AccessibilityManager;
+import java.util.List;
+public class HealthStatus { public static String diagnostico(Context c){StringBuilder s=new StringBuilder("STATUS DO SISTEMA\n\n");s.append("🟢 Serviço principal: Ativo\n");s.append(Prefs.getComunicacaoAtiva(c)?"🟢 Comunicação: Ativa\n":"🔴 Comunicação: Desativada\n");s.append(acessibilidade(c)?"🟢 Acessibilidade: Ativa\n":"🔴 Acessibilidade: Desativada — ative para permitir USSD\n");boolean sim=false;for(int i=1;i<=2;i++)try{if(Prefs.getTransferenciasRestantes(c,i)>0&&UssdTransferManager.simEhVodacom(c,i))sim=true;}catch(Exception e){}s.append(sim?"🟢 SIM: Disponível\n":"🔴 SIM: Nenhum SIM disponível para transferência\n");return s.toString();}private static boolean acessibilidade(Context c){try{AccessibilityManager m=(AccessibilityManager)c.getSystemService(Context.ACCESSIBILITY_SERVICE);List<AccessibilityServiceInfo> l=m.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK);for(AccessibilityServiceInfo i:l)if(i.getResolveInfo().serviceInfo.packageName.equals(c.getPackageName()))return true;}catch(Exception e){}return false;}}

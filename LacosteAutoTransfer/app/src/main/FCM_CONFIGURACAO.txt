@@ -1,0 +1,19 @@
+LACOSTE AUTO - FIREBASE/FCM
+
+Firebase:
+project_id = lacoste-auto
+Android package = com.lacoste.auto
+google-services.json = incluído na raiz do projeto Android.
+
+O APK usa Firebase Cloud Messaging para acordar o MonitorService quando a API cria um pedido.
+
+VERCEL:
+Configure:
+FIREBASE_PROJECT_ID=lacoste-auto
+FIREBASE_CLIENT_EMAIL=<client_email da Service Account>
+FIREBASE_PRIVATE_KEY=<private_key da Service Account, com \n>
+
+A chave privada NÃO foi colocada neste ZIP nem no APK.
+
+Fluxo:
+grupo -> dispositivo associado no painel -> pedido -> FCM -> app -> valida Android ID/token/licença -> transferência.

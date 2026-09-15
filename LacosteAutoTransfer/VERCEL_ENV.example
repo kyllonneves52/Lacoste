@@ -1,0 +1,8 @@
+# Banco criado pela integração Vercel/Neon ou Vercel Postgres
+POSTGRES_URL=
+
+# Senha do painel administrativo
+ADMIN_PASSWORD=troque-esta-senha
+
+# Token secreto usado pelo bot para criar pedidos
+LACOSTE_BOT_TOKEN=troque-este-token

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>LACOSTE AUTO</title>
+<style>
+  :root {
+    --bg: #0A0E14;
+    --card: #131A24;
+    --card2: #1A2332;
+    --accent: #22C55E;
+    --accent-dark: #16A34A;
+    --red: #EF4444;
+    --text: #F1F5F9;
+    --muted: #94A3B8;
+  }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, Roboto, 'Segoe UI', sans-serif;
+    padding: 20px 16px 40px;
+    max-width: 720px; margin: 0 auto;
+  }
+ .header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-top: 10px; }
+ .logo {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700;
+    box-shadow: 0 8px 24px rgba(34,197,94,.25);
+  }
+ .header h1 { font-size: 20px; margin: 0; font-weight: 700; }
+ .header p { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+
+ .licenca {
+    color: var(--accent); font-size: 12px; font-weight: 600; margin-bottom: 16px;
+    background: rgba(34,197,94,0.1); padding: 8px 12px; border-radius: 8px;
+    border: 1px solid rgba(34,197,94,0.2);
+  }
+
+ .card {
+    background: var(--card); border-radius: 16px; padding: 18px;
+    margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+ .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); margin: 0 0 14px; font-weight: 600; }
+
+ .stat-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+ .stat-row:last-child { border-bottom: none; }
+ .stat-label { color: var(--muted); font-size: 13px; }
+ .stat-value { font-size: 13px; font-weight: 600; }
+ .stat-value.ok { color: var(--accent); }
+ .stat-value.bad { color: var(--red); }
+
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  input[type=text] {
+    width: 100%; background: var(--card2); border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text); padding: 14px; border-radius: 12px; font-size: 14px; margin-bottom: 14px;
+  }
+  input[type=text]:focus { outline: none; border-color: var(--accent); }
+
+  button {
+    width: 100%; padding: 14px; border: none; border-radius: 12px;
+    font-size: 15px; font-weight: 600; margin-bottom: 10px; cursor: pointer;
+    transition: all.15s ease;
+  }
+  button:active { transform: scale(0.98); }
+ .btn-primary { background: var(--accent); color: #06280F; }
+ .btn-primary:active { background: var(--accent-dark); }
+ .btn-secondary { background: var(--card2); color: var(--text); display: flex; align-items: center; justify-content: space-between; }
+ .btn-secondary.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+ .btn-secondary.dot.ok { background: var(--accent); }
+ .btn-secondary.dot.bad { background: var(--red); }
+
+ .seg3 { display:flex; gap:8px; margin-top:8px; }
+ .seg3 button { flex:1; padding:10px 4px; border-radius:10px; border:1px solid rgba(255,255,255,0.08); background:var(--card2); color:var(--text); font-size:13px; }
+ .seg3 button.active { background:var(--accent); color:#08130f; font-weight:600; border-color:var(--accent); }
+ .seg3 button.active.nenhum { background:var(--red); color:#fff; border-color:var(--red); }
+
+ .sim-row { display: flex; gap: 12px; margin-bottom: 4px; }
+ .sim-box {
+    flex: 1; background: var(--card2); border-radius: 14px; padding: 14px;
+    border: 1px solid rgba(255,255,255,0.08); text-align: center; cursor: pointer;
+    transition: all.2s ease;
+  }
+ .sim-box:active { border-color: var(--accent); transform: scale(0.98); }
+ .sim-box.sim-nome { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+ .sim-box.sim-saldo { font-size: 22px; font-weight: 700; margin: 8px 0 4px; }
+ .sim-box.sim-saldo.loading { font-size: 13px; color: var(--muted); font-weight: 500; }
+ .sim-restantes-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px; }
+ .btn-ajuste { width: 26px; height: 26px; padding: 0; border-radius: 8px; background: rgba(255,255,255,0.08); color: var(--text); font-size: 16px; font-weight: 700; margin: 0; }
+ .sim-restantes { font-size: 11px; color: var(--muted); }
+ .sim-restantes.aviso { color: var(--red); }
+ .sim-numero-fixo { font-size: 10px; color: var(--accent); margin-top: 4px; }
+ .btn-reset-sim {
+    width: auto; padding: 5px 10px; border-radius: 8px;
+    background: rgba(255,255,255,0.06); color: var(--muted);
+    font-size: 11px; font-weight: 600; margin: 8px auto 0; display: block;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+ .btn-reset-sim.danger { background: rgba(239,68,68,0.15); color: var(--red); border-color: rgba(239,68,68,0.25); }
+ .sim-dica { font-size: 11px; color: var(--muted); text-align: center; margin-top: 10px; }
+
+ .toast {
+    position: fixed; bottom: 20px; left: 16px; right: 16px;
+    background: var(--card2); color: var(--text); padding: 14px 16px; border-radius: 12px;
+    text-align: center; font-size: 13px; opacity: 0; transform: translateY(10px);
+    transition: all.25s ease; pointer-events: none; border: 1px solid rgba(255,255,255,0.08);
+  }
+ .toast.show { opacity: 1; transform: translateY(0); }
+
+ .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.8); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+ .modal-overlay.show { display: flex; }
+ .modal-box {
+    background: var(--card); border-radius: 18px; padding: 22px;
+    width: calc(100% - 40px); max-width: 360px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+ .modal-box h3 { margin: 0 0 8px; font-size: 16px; }
+ .modal-box p { font-size: 12px; color: var(--muted); margin: 0 0 14px; }
+ .modal-aviso { font-size: 11px; color: var(--red); min-height: 16px; margin-bottom: 10px; }
+ .modal-btns { display: flex; gap: 10px; }
+ .modal-btns button { flex: 1; margin: 0; }
+</style>
+</head>
+<body>
+
+  <button id="btn-lock" onclick="toggleLock()" style="
+    position:fixed; top:12px; right:12px; z-index:9999;
+    width:40px; height:40px; border-radius:50%; border:none;
+    background:rgba(255,255,255,0.08); font-size:18px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition: background.2s;
+  ">🔓</button>
+
+  <div class="header">
+    <div class="logo">LA</div>
+    <div>
+      <h1>LACOSTE AUTO</h1>
+      <p>Automação de megas e crédito</p>
+    </div>
+  </div>
+
+  <div class="licenca" id="licenca-texto">Licença: carregando...</div>
+
+  <div class="card">
+    <h2>Saldo e transferências</h2>
+    <div class="sim-row">
+      <div class="sim-box">
+        <div class="sim-nome" onclick="consultarSaldo(1)">SIM 1</div>
+        <div class="sim-saldo loading" id="sim1-saldo" onclick="consultarSaldo(1)">toca pra ver</div>
+        <div class="sim-restantes-row"><button class="btn-ajuste" onclick="ajustarRestantes(1,-1)">−</button><span class="sim-restantes" id="sim1-restantes">—</span><button class="btn-ajuste" onclick="ajustarRestantes(1,1)">+</button></div>
+        <div class="sim-numero-fixo" id="sim1-numero-fixo"></div>
+        <button class="btn-reset-sim" onclick="abrirModalReset(1)">🔄 Resetar / Nº fixo</button>
+      </div>
+      <div class="sim-box">
+        <div class="sim-nome" onclick="consultarSaldo(2)">SIM 2</div>
+        <div class="sim-saldo loading" id="sim2-saldo" onclick="consultarSaldo(2)">toca pra ver</div>
+        <div class="sim-restantes-row"><button class="btn-ajuste" onclick="ajustarRestantes(2,-1)">−</button><span class="sim-restantes" id="sim2-restantes">—</span><button class="btn-ajuste" onclick="ajustarRestantes(2,1)">+</button></div>
+        <div class="sim-numero-fixo" id="sim2-numero-fixo"></div>
+        <button class="btn-reset-sim" onclick="abrirModalReset(2)">🔄 Resetar / Nº fixo</button>
+      </div>
+    </div>
+    <div class="sim-dica">Consulta lê o saldo via *162# e cancela — não gasta transferência.</div>
+  </div>
+
+  <div class="card">
+    <h2>Transferência manual</h2>
+    <label>Quantidade de MB</label>
+    <input type="text" inputmode="numeric" id="input-mb" placeholder="Ex: 100">
+    <label>Número do destinatário</label>
+    <input type="text" inputmode="numeric" id="input-num-transf" placeholder="Ex: 858098975">
+    <button class="btn-primary" onclick="transferirManual()">Transferir agora</button>
+    <div class="stat-row"><span class="stat-label">Acessibilidade</span><span class="stat-value" id="st-acessibilidade">—</span></div>
+    <button class="btn-secondary" onclick="Android.abrirConfigAcessibilidade()">
+      <span>Abrir configuração de acessibilidade</span><span class="dot" id="dot-acess"></span>
+    </button>
+    <div id="resultado-transf" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
+  </div>
+
+  <div class="card">
+    <h2>Transferência de crédito</h2>
+    <label>SIM para crédito</label>
+    <div class="seg3" id="seg-credito-disp">
+      <button onclick="definirSimCredito(1)" id="seg-cred-1">SIM 1</button>
+      <button onclick="definirSimCredito(2)" id="seg-cred-2">SIM 2</button>
+      <button onclick="definirSimCredito(0)" id="seg-cred-0">Nenhum</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px" id="txt-credito-disp"></div>
+    <label style="margin-top:10px">Valor em MT</label>
+    <input type="text" inputmode="decimal" id="input-valor-credito" placeholder="Ex: 5">
+    <label>Número do destinatário</label>
+    <input type="text" inputmode="numeric" id="input-num-credito" placeholder="Ex: 858098975">
+    <button class="btn-primary" onclick="transferirCreditoManual()">Transferir crédito agora</button>
+    <div id="resultado-credito" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
+  </div>
+
+  <div class="card">
+    <h2>Permissões e sistema</h2>
+    <button class="btn-secondary" onclick="Android.pedirPermissoesChamadas()">
+      <span>Permitir chamadas / USSD</span><span class="dot" id="dot-call"></span>
+    </button>
+    <button class="btn-secondary" onclick="Android.abrirConfigBateria()">
+      <span>Otimização da bateria</span><span class="dot" id="dot-bateria"></span>
+    </button>
+    <button class="btn-secondary" onclick="Android.abrirConfigDeviceAdmin()">
+      <span>Administrador do dispositivo</span><span class="dot" id="dot-admin"></span>
+    </button>
+  </div>
+
+  <div class="modal-overlay" id="modal-reset" onclick="if(event.target===this)fecharModal()">
+    <div class="modal-box">
+      <h3 id="modal-titulo">SIM 1 — Número fixo</h3>
+      <p id="modal-descricao"></p>
+      <label>Número fixo — 9 dígitos, começa com 84 ou 85</label>
+      <input type="text" inputmode="numeric" id="modal-input-numero" placeholder="Ex: 850000" maxlength="9" oninput="onModalNumeroInput()">
+      <div class="modal-aviso" id="modal-aviso"></div>
+      <div class="modal-btns" id="modal-btns"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  function mostrarToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  var _bloqueado = false;
+  function toggleLock() {
+    _bloqueado =!_bloqueado;
+    var btn = document.getElementById('btn-lock');
+    btn.textContent = _bloqueado? '🔒' : '🔓';
+    mostrarToast(_bloqueado? '🔒 Bloqueado' : '🔓 Desbloqueado');
+  }
+
+  function atualizarPermissaoNotificacoes() {
+    try {
+      const ativo = Android.acessoNotificacoesAtivo();
+      const dot = document.getElementById('dot-notif');
+      if (dot) dot.classList.toggle('ok', ativo);
+      if (dot) dot.classList.toggle('bad',!ativo);
+    } catch (e) {}
+  }
+
+  function transferirManual() {
+    if (window._ussdEmCurso) { mostrarToast('Aguarda a operação em curso terminar...'); return; }
+    window._ussdEmCurso = true;
+    const mb = parseInt(document.getElementById('input-mb').value);
+    const numero = document.getElementById('input-num-transf').value.trim();
+    if (!mb ||!numero) { mostrarToast('Preenche a quantidade e o número'); return; }
+    if (!Android.acessibilidadeAtiva()) { mostrarToast('Ativa o serviço de acessibilidade primeiro'); return; }
+    document.getElementById('resultado-transf').textContent = '⏳ A processar (*162#)...';
+    Android.transferirManual(mb, numero);
+  }
+
+  function mostrarResultadoTransferencia(sucesso, mensagem) {
+    window._ussdEmCurso = false;
+    const el = document.getElementById('resultado-transf');
+    el.textContent = (sucesso? '✅ ' : '❌ ') + mensagem;
+    if (sucesso) setTimeout(atualizarStatus, 500);
+  }
+
+  function definirSimCredito(simOuZero) {
+    Android.setSimCreditoDisponivel(simOuZero);
+    atualizarSegCredito(simOuZero);
+    mostrarToast(simOuZero === 0? 'Crédito desligado' : 'Crédito no SIM ' + simOuZero);
+  }
+
+  function atualizarSegCredito(valor) {
+    [0, 1, 2].forEach(function (v) {
+      var el = document.getElementById('seg-cred-' + v);
+      el.classList.toggle('active', v === valor);
+      el.classList.toggle('nenhum', v === 0 && v === valor);
+    });
+    var txt = document.getElementById('txt-credito-disp');
+    txt.textContent = valor === 0? '⚠️ Nenhum SIM para crédito' : 'Pedidos usam só o SIM ' + valor;
+  }
+
+  function transferirCreditoManual() {
+    if (window._ussdEmCurso) { mostrarToast('Aguarda a operação em curso terminar...'); return; }
+    const valor = document.getElementById('input-valor-credito').value.trim();
+    const numero = document.getElementById('input-num-credito').value.trim();
+    if (!valor ||!numero) { mostrarToast('Preenche o valor e o número'); return; }
+    if (!Android.acessibilidadeAtiva()) { mostrarToast('Ativa o serviço de acessibilidade primeiro'); return; }
+    window._ussdEmCurso = true;
+    document.getElementById('resultado-credito').textContent = '⏳ A processar credito...';
+    Android.transferirCreditoManual(valor, numero);
+  }
+
+  function mostrarResultadoCredito(sucesso, mensagem) {
+    window._ussdEmCurso = false;
+    const el = document.getElementById('resultado-credito');
+    el.textContent = (sucesso? '✅ ' : '❌ ') + mensagem;
+  }
+
+  function ajustarRestantes(sim, delta) {
+    Android.ajustarRestantes(sim, delta);
+    atualizarStatus();
+  }
+
+  var _modalSim = 1;
+  var _modalRestantes = 0;
+  var _modalMax = 10;
+
+  function abrirModalReset(sim) {
+    _modalSim = sim;
+    var elRestantes = document.getElementById('sim' + sim + '-restantes');
+    var matchR = elRestantes.textContent.match(/(\d+)\/(\d+)/);
+    _modalRestantes = matchR? parseInt(matchR[1]) : 0;
+    _modalMax = matchR? parseInt(matchR[2]) : 10;
+    document.getElementById('modal-titulo').textContent = 'SIM ' + sim + ' — Número fixo';
+    document.getElementById('modal-input-numero').value = Android.getNumeroFixo(sim) || '';
+    document.getElementById('modal-aviso').textContent = '';
+    document.getElementById('modal-descricao').innerHTML = _modalRestantes === 0? 'Sem transferências. Reseta para <b>' + _modalMax + '</b>' : 'Restam <b>' + _modalRestantes + '</b> transferências.';
+    renderBotoesModal(true);
+    document.getElementById('modal-reset').classList.add('show');
+  }
+
+  function renderBotoesModal(numeroValido) {
+    var limpo = document.getElementById('modal-input-numero').value.replace(/[^0-9]/g, '');
+    var txtGuardar = limpo.length === 0? 'Remover número' : 'Guardar número';
+    var html = '<button class="btn-secondary" onclick="fecharModal()">Cancelar</button>';
+    if (_modalRestantes < _modalMax) {
+      html += '<button class="btn-secondary" onclick="executarReset()">Resetar</button>';
+    }
+    if (numeroValido) {
+      html += '<button class="btn-primary" onclick="guardarNumero()">' + txtGuardar + '</button>';
+    }
+    document.getElementById('modal-btns').innerHTML = html;
+  }
+
+  function onModalNumeroInput() {
+    var limpo = document.getElementById('modal-input-numero').value.replace(/[^0-9]/g, '');
+    renderBotoesModal(limpo.length === 0 || (limpo.length === 9 && (limpo.startsWith('84') || limpo.startsWith('85'))));
+  }
+
+  function fecharModal() {
+    document.getElementById('modal-reset').classList.remove('show');
+  }
+
+  function guardarNumero() {
+    var limpo = document.getElementById('modal-input-numero').value.replace(/[^0-9]/g, '');
+    Android.setNumeroFixo(_modalSim, limpo);
+    fecharModal();
+    mostrarToast('Número fixo guardado ✅');
+    atualizarStatus();
+  }
+
+  function executarReset() {
+    var limpo = document.getElementById('modal-input-numero').value.replace(/[^0-9]/g, '');
+    if (limpo.length === 9) Android.setNumeroFixo(_modalSim, limpo);
+    Android.resetarTransferencias(_modalSim);
+    fecharModal();
+    mostrarToast('SIM ' + _modalSim + ' resetado ✅');
+    atualizarStatus();
+  }
+
+  function consultarSaldo(sim) {
+    if (window._ussdEmCurso) { mostrarToast('Aguarda a operação em curso terminar...'); return; }
+    window._ussdEmCurso = true;
+    if (!Android.acessibilidadeAtiva()) { mostrarToast('Ativa o serviço de acessibilidade primeiro'); return; }
+    const elSaldo = document.getElementById('sim' + sim + '-saldo');
+    elSaldo.textContent = 'a consultar...';
+    elSaldo.className = 'sim-saldo loading';
+    Android.consultarSaldo(sim);
+  }
+
+  function mostrarSaldoConsultado(sim, saldoMB, sucesso, mensagem) {
+    window._ussdEmCurso = false;
+    const elSaldo = document.getElementById('sim' + sim + '-saldo');
+    elSaldo.textContent = sucesso? saldoMB + ' MB' : 'erro';
+    elSaldo.className = 'sim-saldo';
+    atualizarStatus();
+  }
+
+  function atualizarQuadroSim(sim, status) {
+    const saldo = status['saldoSim' + sim];
+    const restantes = status['transferenciasRestantesSim' + sim];
+    const max = status.maxTransferenciasDia;
+    const numeroFixo = status['numeroFixoSim' + sim] || '';
+    const elSaldo = document.getElementById('sim' + sim + '-saldo');
+    if (saldo >= 0) {
+      elSaldo.textContent = saldo + ' MB';
+      elSaldo.className = 'sim-saldo';
+    }
+    const elRestantes = document.getElementById('sim' + sim + '-restantes');
+    elRestantes.textContent = 'restantes hoje: ' + restantes + '/' + max;
+    elRestantes.className = 'sim-restantes' + (restantes === 0? ' aviso' : '');
+    const elFixo = document.getElementById('sim' + sim + '-numero-fixo');
+    if (elFixo) elFixo.textContent = numeroFixo? ('🔒 ' + numeroFixo) : '';
+  }
+
+  function atualizarStatus() {
+    try {
+      const status = JSON.parse(Android.getStatus());
+      const acessOk = Android.acessibilidadeAtiva();
+      document.getElementById('st-acessibilidade').textContent = acessOk? 'Ativo' : 'Inativo';
+      document.getElementById('st-acessibilidade').className = 'stat-value ' + (acessOk? 'ok' : 'bad');
+      setDot('dot-acess', acessOk);
+      setDot('dot-call', Android.temPermissaoChamadas());
+      setDot('dot-bateria', status.bateriaIgnorada);
+      setDot('dot-admin', status.deviceAdminAtivo);
+      atualizarQuadroSim(1, status);
+      atualizarQuadroSim(2, status);
+      atualizarSegCredito(typeof status.simCreditoDisponivel === 'number'? status.simCreditoDisponivel : 1);
+      document.getElementById('licenca-texto').textContent = 'Licença: ' + (status.licenca || '2 dias 23h');
+    } catch (e) {}
+  }
+
+  function setDot(id, ok) {
+    document.getElementById(id).className = 'dot ' + (ok? 'ok' : 'bad');
+  }
+
+  window.addEventListener('load', () => {
+    atualizarStatus();
+    setInterval(atualizarStatus, 3000);
+  });
+</script>
+
+</body>
+</html>

@@ -2,7 +2,6 @@ package com.lacoste.verification;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
-import android.content.Context;
 
 public class FirebasePushService extends FirebaseMessagingService {
 
@@ -24,9 +23,8 @@ public class FirebasePushService extends FirebaseMessagingService {
         try {
             if (m.getData() == null) return;
             String type = m.getData().get("type");
-            if (type != null && "NEW_PAYMENT_VERIFICATION".equalsIgnoreCase(type)) {
-                return;
-            }
+            if (type == null) return;
+            if (!"NEW_PAYMENT_VERIFICATION".equalsIgnoreCase(type)) return;
 
             String id = m.getData().get("pedidoId");
             String pid = m.getData().get("paymentId");
@@ -43,12 +41,10 @@ public class FirebasePushService extends FirebaseMessagingService {
             } catch (Exception ignored) {}
 
             double value = 0;
-            try {
-                value = Double.parseDouble(v == null ? "0" : v);
-            } catch (Exception ignored) {}
+            try { value = Double.parseDouble(v == null ? "0" : v); } catch (Exception ignored) {}
 
             VerificationStore.setPending(this, id, pid, value, provider == null ? "all" : provider, deadline);
-
+            VerificationProcessor.matchPendingAgainstInbox(this);
         } catch (Exception ignored) {}
     }
 }

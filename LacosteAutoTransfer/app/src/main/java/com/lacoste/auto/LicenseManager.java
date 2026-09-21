@@ -85,6 +85,9 @@ public class LicenseManager {
         if (r.has("slot")) Prefs.setDeviceSlot(c, r.optInt("slot", 0));
         Prefs.setDeviceExpiresAt(c, iso);
         LicenseStorage.salvar(c,"CHAVE="+chave+"\nANDROID_ID="+aid+"\nDATA_INICIO="+inicio+"\nDATA_FINAL="+fim+"\nPEDIDO_ID="+rid+"\nDEVICE_SLOT="+Prefs.getDeviceSlot(c)+"\nSERVER="+Prefs.getUrlPainel(c));
+        // O token do dispositivo só passa a existir após a aprovação.
+        // Agora sincronizamos o FCM com esse token.
+        ApiClient.sincronizarFcmAgora(c);
     }
     private static String androidId(Context c){String x=Settings.Secure.getString(c.getContentResolver(),"android_id");return x==null?"desconhecido":x;}
     private static void fail(Context c,Callback cb,String m){ultimoMotivo=m;if(cb!=null)cb.onResultado(false,m);}

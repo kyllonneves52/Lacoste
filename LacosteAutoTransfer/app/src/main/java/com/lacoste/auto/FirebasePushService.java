@@ -14,6 +14,8 @@ public class FirebasePushService extends FirebaseMessagingService {
     public void onCreate() {
         super.onCreate();
         FirebaseConfig.inicializar(getApplicationContext());
+        // Também sincroniza depois de reiniciar o processo/serviço.
+        ApiClient.sincronizarFcmAgora(getApplicationContext());
     }
 
     @Override

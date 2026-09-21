@@ -119,6 +119,32 @@ public class ApiClient {
         }
     }
 
+    /**
+     * Sincroniza o token FCM depois de a licença ser aprovada.
+     * Antes desta correção o app pedia o token FCM antes de ter o token
+     * do dispositivo; o servidor recusava a sincronização e o FCM ficava vazio.
+     */
+    public static void sincronizarFcmAgora(final Context ctx) {
+        FirebaseConfig.inicializar(ctx);
+        new Thread(() -> {
+            try {
+                String fcm = Tasks.await(
+                        com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken(),
+                        15,
+                        TimeUnit.SECONDS
+                );
+                if (fcm != null && !fcm.trim().isEmpty()) {
+                    Prefs.setFcmToken(ctx, fcm.trim());
+                    registarTokenPush(ctx, fcm.trim());
+                } else {
+                    AppLog.add(ctx, TAG, "FCM: token vazio.");
+                }
+            } catch (Exception e) {
+                AppLog.add(ctx, TAG, "FCM: não foi possível obter/sincronizar token: " + e.getMessage());
+            }
+        }).start();
+    }
+
     public static void registarTokenPush(final Context ctx, final String fcmToken) {
         Prefs.setFcmToken(ctx, fcmToken);
         if (fcmToken == null || fcmToken.trim().isEmpty()) return;

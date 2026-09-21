@@ -1,0 +1,18 @@
+LACOSTE AUTO — CORREÇÕES 21/09/2026
+
+Principais correções:
+1. FCM do Lacoste Auto é sincronizado novamente depois da aprovação da licença e ao iniciar o serviço.
+2. O Lacoste Auto mostra Android ID e estado do FCM e tem botão "Sincronizar FCM agora".
+3. O Lacoste Auto deixou de pedir MANAGE_EXTERNAL_STORAGE/acesso amplo ao armazenamento.
+4. Builds debug usam uma chave estável incluída no projeto; futuras builds deste projeto podem atualizar a instalação sem trocar a assinatura.
+5. O LC Verification não ocupa mais uma das 2 vagas do Lacoste Auto. Pode ficar noutro telefone.
+6. Aprovação de licença do LC Verification cria/atualiza verification_devices, sem criar devices/slot do Auto.
+7. Associação de grupo informa o estado do FCM e impede usar Android ID de Verification como dispositivo MB.
+8. /api/setup inclui migração do esquema antigo de payment_verifications, corrigindo reference/amount_mt/operator e preservando dados.
+9. IDs de pagamento são comparados de forma mais tolerante a pontos, espaços e hífens, sem remover a exigência de correspondência do ID.
+10. Se o operador do SMS não puder ser identificado, o modo "todos" ainda pode casar por ID + valor; se o grupo exigir Voda/E-Mola, o operador continua obrigatório.
+11. O fluxo de SMS continua aceitando apenas mensagens de RECEBIMENTO; "Transferiste" sozinho não é prova de dinheiro recebido.
+
+IMPORTANTE:
+- A chave debug estável é para continuidade dos APKs de teste. Para distribuição comercial, migrar depois para uma chave release privada.
+- Quem já tem um APK Lacoste Auto instalado com OUTRA assinatura pode precisar desinstalar uma única vez. Depois de instalar esta versão corrigida, as próximas atualizações devem manter a mesma assinatura.

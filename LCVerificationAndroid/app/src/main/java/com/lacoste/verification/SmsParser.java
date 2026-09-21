@@ -63,7 +63,7 @@ public final class SmsParser {
     }
 
     public static String normalizeId(String id) {
-        return id == null ? "" : id.replace(".", "").trim();
+        return id == null ? "" : id.replaceAll("[.\\s-]", "").trim().toUpperCase();
     }
 
     public static double value(String t) {

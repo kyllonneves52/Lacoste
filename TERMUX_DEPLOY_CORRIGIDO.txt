@@ -1,0 +1,42 @@
+TERMUX — DEPLOY DO SITE CORRIGIDO
+
+1) Faça backup:
+cd /storage/emulated/0
+cp -r lacoste_site lacoste_site_BACKUP_ANTES_CORRECAO
+
+2) Extraia o ZIP corrigido:
+cd /storage/emulated/0
+unzip -o lacoste_site_CORRIGIDO.zip
+
+3) Publique:
+cd /storage/emulated/0/lacoste_site
+vercel --prod
+
+4) Depois de publicar, execute o setup/migração uma vez.
+Defina a senha do admin na sessão:
+export ADMIN_PASSWORD='A_TUA_SENHA_DO_ADMIN'
+
+curl -s -X POST 'https://lacoste-site.vercel.app/api/setup'   -H 'X-Admin-Password: '"$ADMIN_PASSWORD"
+
+5) Se o setup devolver ok:true, a base foi atualizada.
+
+APK LACOSTE AUTO:
+- O ZIP contém o projeto LacosteAutoTransfer corrigido.
+- Abra/mande para o GitHub e execute o workflow "Build Lacoste Auto Transfer".
+- A versão é 2.1.0 / versionCode 3.
+- O FCM é sincronizado depois da licença aprovada.
+
+APK LC VERIFICATION:
+- A versão é 1.1 / versionCode 2.
+- Pode ser instalado num telefone diferente do Lacoste Auto.
+- A licença Verification não ocupa slot do Lacoste Auto.
+
+TESTE FINAL:
+A) Lacoste Auto: licença aprovada -> abrir app -> "FCM: configurado".
+B) No bot, associar o grupo ao Android ID do Lacoste Auto.
+C) Confirmar que a listagem do dispositivo mostra push_configurado=true.
+D) Se usar SMS: associar o LC Verification ao Android ID do Lacoste Auto e configurar .config sms todos.
+E) Enviar uma compra real. O SMS de RECEBIMENTO precisa ter o mesmo ID e valor esperado.
+F) Só depois da verificação o pedido fica pending para o Lacoste Auto.
+
+NÃO use o projeto_base para substituir estes arquivos. Ele fica apenas como referência.

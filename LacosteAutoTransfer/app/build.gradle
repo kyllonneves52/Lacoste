@@ -11,8 +11,8 @@ android {
         applicationId 'com.lacoste.auto'
         minSdk 23
         targetSdk 33
-        versionCode 1
-        versionName '2.0-transfer'
+        versionCode 3
+        versionName '2.1.0-transfer'
     }
 
     buildFeatures {
@@ -23,6 +23,15 @@ android {
     def firebaseAppId = project.findProperty("FIREBASE_APP_ID") ?: ""
     def firebaseProjectId = project.findProperty("FIREBASE_PROJECT_ID") ?: ""
     def firebaseSenderId = project.findProperty("FIREBASE_MESSAGING_SENDER_ID") ?: ""
+
+    signingConfigs {
+        debug {
+            storeFile file("$projectDir/lacoste-debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
 
     buildTypes {
         debug {

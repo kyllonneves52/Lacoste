@@ -151,65 +151,18 @@ public class MainActivity extends AppCompatActivity {
         // Depois da licença, pedir o acesso aos arquivos.
         pedirPermissoesStorage();
 
+        // Garante FCM mesmo quando a aprovação aconteceu nesta instalação.
+        ApiClient.sincronizarFcmAgora(getApplicationContext());
+
         construirInterfaceNativa();
         iniciarMonitorService();
         licenseHandler.post(licenseCheckRunnable);
     }
 
-    // Sistema de armazenamento baseado no main1, adaptado para Android moderno.
+    // O Lacoste Auto não precisa de acesso amplo ao armazenamento.
+    // Removido MANAGE_EXTERNAL_STORAGE para evitar configurações extras.
     private void pedirPermissoesStorage() {
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            return;
-        }
-
-        // Android 6 a 10: permissão normal de leitura/escrita.
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
-
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED) {
-
-                ActivityCompat.requestPermissions(
-                        this,
-                        new String[]{
-                                Manifest.permission.READ_EXTERNAL_STORAGE,
-                                Manifest.permission.WRITE_EXTERNAL_STORAGE
-                        },
-                        REQ_STORAGE
-                );
-            }
-
-            return;
-        }
-
-        // Android 11/12/13/14+: MANAGE_EXTERNAL_STORAGE é uma
-        // permissão especial. READ/WRITE_EXTERNAL_STORAGE já não
-        // fornecem acesso amplo ao armazenamento.
-        if (!Environment.isExternalStorageManager()) {
-
-            try {
-                Intent intent = new Intent(
-                        Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
-                );
-                intent.setData(Uri.parse("package:" + getPackageName()));
-                startActivity(intent);
-
-            } catch (Exception e) {
-
-                try {
-                    startActivity(new Intent(
-                            Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION
-                    ));
-                } catch (Exception ignored) {
-                }
-            }
-        }
+        // Intencionalmente vazio.
     }
 
     @Override

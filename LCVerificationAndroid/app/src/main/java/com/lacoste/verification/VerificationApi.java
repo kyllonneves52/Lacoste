@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 import org.json.JSONObject;
 
 public final class VerificationApi {
-    private static final String BASE = "https://lacoste-site.vercel.app";
+    private static final String BASE = "https://kyllon.vercel.app";
     private VerificationApi() {}
 
     static JSONObject req(String path, String method, JSONObject body, String token, String deviceId) throws Exception {

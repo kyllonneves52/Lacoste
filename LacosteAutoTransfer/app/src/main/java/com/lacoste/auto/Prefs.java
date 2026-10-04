@@ -644,4 +644,28 @@ public class Prefs {
     public static void setNumeroExtra(Context ctx, String numero) {
         sp(ctx).edit().putString("numero_extra", numero == null ? "" : numero.trim()).apply();
     }
+
+    private static final String KEY_HISTORICO = "historico_transferencias";
+
+    public static void addHistorico(Context ctx, String tipo, String detalhe, boolean concluida) {
+        try {
+            String atual = sp(ctx).getString(KEY_HISTORICO, "");
+            String linha = System.currentTimeMillis() + "|" + (concluida ? "ok" : "cancel") + "|"
+                    + (tipo == null ? "" : tipo.replace("|", "/")) + "|"
+                    + (detalhe == null ? "" : detalhe.replace("|", "/").replace("\n", " "));
+            String junto = linha + (atual.isEmpty() ? "" : "\n" + atual);
+            String[] partes = junto.split("\n");
+            StringBuilder sb = new StringBuilder();
+            int n = Math.min(partes.length, 40);
+            for (int i = 0; i < n; i++) {
+                if (i > 0) sb.append('\n');
+                sb.append(partes[i]);
+            }
+            sp(ctx).edit().putString(KEY_HISTORICO, sb.toString()).apply();
+        } catch (Exception ignored) {}
+    }
+
+    public static String getHistorico(Context ctx) {
+        return sp(ctx).getString(KEY_HISTORICO, "");
+    }
 }

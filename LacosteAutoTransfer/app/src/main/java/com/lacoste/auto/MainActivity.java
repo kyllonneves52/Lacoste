@@ -323,7 +323,7 @@ public class MainActivity extends AppCompatActivity {
         return content;
     }
 
-    private TextView sectionTitle(String icon, String title, String subtitle) {
+    private LinearLayout sectionTitle(String icon, String title, String subtitle) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);

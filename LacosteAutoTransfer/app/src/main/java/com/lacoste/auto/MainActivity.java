@@ -91,8 +91,8 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout card(String title) {
         LinearLayout c = new LinearLayout(this);
         c.setOrientation(LinearLayout.VERTICAL);
-        c.setPadding(dp(16), dp(14), dp(16), dp(14));
-        c.setBackground(round(0xFF171F2E, 16));
+        c.setPadding(dp(10), dp(10), dp(10), dp(10));
+        c.setBackground(round(0xFF101D2D, 14));
 
         LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -111,15 +111,15 @@ public class MainActivity extends AppCompatActivity {
     private Button button(String label) {
         Button b = new Button(this);
         b.setText(label);
-        b.setTextSize(14);
+        b.setTextSize(12);
         b.setAllCaps(false);
         b.setTextColor(0xFFE5E9F0);
         b.setBackgroundColor(0xFF1E2838);
         LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(50)
+                dp(44)
         );
-        p.setMargins(0, dp(5), 0, dp(5));
+        p.setMargins(0, dp(3), 0, dp(3));
         b.setLayoutParams(p);
         return b;
     }
@@ -130,14 +130,14 @@ public class MainActivity extends AppCompatActivity {
         e.setHintTextColor(0xFF8792A6);
         e.setTextColor(0xFFE5E9F0);
         e.setSingleLine(true);
-        e.setTextSize(14);
+        e.setTextSize(12);
         e.setPadding(dp(12), 0, dp(12), 0);
         e.setBackgroundColor(0xFF1E2838);
         LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(52)
+                dp(46)
         );
-        p.setMargins(0, dp(3), 0, dp(6));
+        p.setMargins(0, dp(3), 0, dp(4));
         e.setLayoutParams(p);
         return e;
     }
@@ -211,19 +211,21 @@ public class MainActivity extends AppCompatActivity {
     private void construirInterfaceNativa() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(0xFF0B1220);
+        root.setBackgroundColor(0xFF061321);
+        getWindow().setStatusBarColor(0xFF061321);
+        getWindow().setNavigationBarColor(0xFF061321);
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(dp(16), dp(16), dp(16), dp(8));
+        header.setPadding(dp(16), dp(10), dp(16), dp(4));
 
         TextView logo = new TextView(this);
-        logo.setText("L");
-        logo.setTextSize(22);
+        logo.setText("🐊");
+        logo.setTextSize(27);
         logo.setTextColor(Color.WHITE);
         logo.setGravity(Gravity.CENTER);
-        logo.setBackground(round(0xFF0F2744, 16));
+        logo.setBackground(round(0x00132738, 16));
         LinearLayout.LayoutParams logoP = new LinearLayout.LayoutParams(dp(48), dp(48));
         logoP.rightMargin = dp(12);
         logo.setLayoutParams(logoP);
@@ -231,18 +233,18 @@ public class MainActivity extends AppCompatActivity {
 
         LinearLayout titles = new LinearLayout(this);
         titles.setOrientation(LinearLayout.VERTICAL);
-        TextView titulo = text("LACOSTE AUTO", 20);
+        TextView titulo = text("LACOSTE AUTO", 21);
         titulo.setTextColor(0xFFF1F5F9);
         titulo.setPadding(0, 0, 0, 0);
         titles.addView(titulo);
-        TextView subtitulo = text("Automação de transferência de megas (*162#)", 12);
+        TextView subtitulo = text("Automação de transferência de megas", 12);
         subtitulo.setTextColor(0xFF94A3B8);
         subtitulo.setPadding(0, 0, 0, 0);
         titles.addView(subtitulo);
         header.addView(titles);
         root.addView(header);
 
-        licencaView = text("Licença: " + LicenseManager.tempoRestante(this), 12);
+        licencaView = text("🛡  Licença: " + LicenseManager.tempoRestante(this), 13);
         licencaView.setTextColor(0xFF22C55E);
         licencaView.setPadding(dp(16), 0, dp(16), dp(8));
         root.addView(licencaView);
@@ -280,6 +282,8 @@ public class MainActivity extends AppCompatActivity {
     private ScrollView wrapScroll(View child) {
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
+        scroll.setVerticalScrollBarEnabled(false);
+        scroll.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
         scroll.addView(child);
         return scroll;
     }
@@ -319,75 +323,162 @@ public class MainActivity extends AppCompatActivity {
         return content;
     }
 
+    private TextView sectionTitle(String icon, String title, String subtitle) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, dp(4), 0, dp(8));
+
+        TextView ico = text(icon, 17);
+        ico.setGravity(Gravity.CENTER);
+        ico.setTextColor(0xFFE8EEF7);
+        ico.setBackground(round(0xFF13253A, 18));
+        LinearLayout.LayoutParams ip = new LinearLayout.LayoutParams(dp(38), dp(38));
+        ip.rightMargin = dp(10);
+        ico.setLayoutParams(ip);
+        row.addView(ico);
+
+        LinearLayout labels = new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        TextView t = text(title.toUpperCase(), 15);
+        t.setTypeface(null, android.graphics.Typeface.BOLD);
+        t.setTextColor(0xFFF2F5F9);
+        t.setPadding(0, 0, 0, 0);
+        labels.addView(t);
+        if (subtitle != null && !subtitle.isEmpty()) {
+            TextView st = text(subtitle, 10.5f);
+            st.setTextColor(0xFF94A3B8);
+            st.setPadding(0, dp(2), 0, 0);
+            labels.addView(st);
+        }
+        row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1f));
+
+        View line = new View(this);
+        line.setBackgroundColor(0xFF2A3A4E);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(80), dp(1));
+        lp.leftMargin = dp(8);
+        row.addView(line, lp);
+        return row;
+    }
+
+    private LinearLayout panel() {
+        LinearLayout p = new LinearLayout(this);
+        p.setOrientation(LinearLayout.VERTICAL);
+        p.setPadding(dp(10), dp(10), dp(10), dp(10));
+        p.setBackground(round(0xFF101D2D, 14));
+        LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(-1, -2);
+        pp.setMargins(0, 0, 0, dp(10));
+        p.setLayoutParams(pp);
+        return p;
+    }
+
+    private TextView smallIcon(String icon, int color) {
+        TextView v = text(icon, 22);
+        v.setGravity(Gravity.CENTER);
+        v.setTextColor(color);
+        v.setBackground(round(0x001A2B40, 30));
+        v.setPadding(0, 0, 0, 0);
+        v.setLayoutParams(new LinearLayout.LayoutParams(dp(52), dp(52)));
+        return v;
+    }
+
     private LinearLayout construirInicio() {
         LinearLayout content = page();
+        content.setPadding(dp(16), dp(8), dp(16), dp(26));
 
-        LinearLayout saldo = card("Saldo e transferências");
+        // 1 — SALDO E TRANSFERÊNCIAS (compacto como a referência)
+        LinearLayout saldoWrap = new LinearLayout(this);
+        saldoWrap.setOrientation(LinearLayout.VERTICAL);
+        saldoWrap.addView(sectionTitle("▣", "Saldo e transferências", ""));
+
         LinearLayout sims = new LinearLayout(this);
         sims.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams sp1 = new LinearLayout.LayoutParams(0, -2, 1f);
+        sp1.rightMargin = dp(5);
+        LinearLayout.LayoutParams sp2 = new LinearLayout.LayoutParams(0, -2, 1f);
+        sp2.leftMargin = dp(5);
 
         LinearLayout s1 = simCard();
         LinearLayout s2 = simCard();
-        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        sp.setMargins(0, 0, dp(5), 0);
-        s1.setLayoutParams(sp);
-        LinearLayout.LayoutParams sp2 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        sp2.setMargins(dp(5), 0, 0, 0);
+        s1.setLayoutParams(sp1);
         s2.setLayoutParams(sp2);
 
-        s1.addView(text("SIM 1", 12));
-        sim1Saldo = text("toca pra ver", 18);
-        sim1Saldo.setGravity(Gravity.CENTER);
+        TextView eye1 = smallIcon("◉", 0xFF39F27A);
+        eye1.setBackground(round(0x001C5B43, 30));
+        s1.addView(eye1);
+        TextView simLabel1 = text("SIM 1", 11);
+        simLabel1.setTextColor(0xFF94A3B8);
+        s1.addView(simLabel1);
+        sim1Saldo = text("toca pra ver", 14);
+        sim1Saldo.setTextColor(0xFFF2F5F9);
+        sim1Saldo.setPadding(0, 0, 0, 0);
         s1.addView(sim1Saldo);
-        sim1Restantes = text("Restantes hoje: —", 11);
+        sim1Restantes = text("Restantes hoje\n—", 11);
+        sim1Restantes.setTextColor(0xFF39F27A);
+        sim1Restantes.setPadding(0, dp(2), 0, dp(4));
         s1.addView(sim1Restantes);
-        Button q1 = button("Consultar saldo");
+        Button q1 = button("▥  Consultar saldo");
+        q1.setTextSize(12);
+        q1.setBackground(round(0xFF23C76B, 10));
+        q1.setTextColor(0xFFFFFFFF);
         q1.setOnClickListener(v -> consultarSaldoSim(1));
         s1.addView(q1);
 
-        s2.addView(text("SIM 2", 12));
-        sim2Saldo = text("toca pra ver", 18);
-        sim2Saldo.setGravity(Gravity.CENTER);
+        TextView db2 = smallIcon("◎", 0xFF4CA8FF);
+        s2.addView(db2);
+        TextView simLabel2 = text("SIM 2", 11);
+        simLabel2.setTextColor(0xFF94A3B8);
+        s2.addView(simLabel2);
+        sim2Saldo = text("toca pra ver", 14);
+        sim2Saldo.setTextColor(0xFFF2F5F9);
+        sim2Saldo.setPadding(0, 0, 0, 0);
         s2.addView(sim2Saldo);
-        sim2Restantes = text("Restantes hoje: —", 11);
+        sim2Restantes = text("Restantes hoje\n—", 11);
+        sim2Restantes.setTextColor(0xFF39F27A);
+        sim2Restantes.setPadding(0, dp(2), 0, dp(4));
         s2.addView(sim2Restantes);
-        Button q2 = button("Consultar saldo");
+        Button q2 = button("▥  Consultar saldo");
+        q2.setTextSize(12);
+        q2.setBackground(round(0xFF23C76B, 10));
+        q2.setTextColor(0xFFFFFFFF);
         q2.setOnClickListener(v -> consultarSaldoSim(2));
         s2.addView(q2);
 
         sims.addView(s1);
         sims.addView(s2);
-        saldo.addView(sims);
+        saldoWrap.addView(sims);
 
+        // Botões pequenos aparecem logo abaixo ao deslizar, em vez de ocupar o topo.
         LinearLayout resets = new LinearLayout(this);
         resets.setOrientation(LinearLayout.HORIZONTAL);
-        Button f1 = button("Número fixo / Resetar");
+        Button f1 = button("SIM 1  •  Número fixo / Resetar");
+        Button f2 = button("SIM 2  •  Número fixo / Resetar");
+        f1.setTextSize(10.5f); f2.setTextSize(10.5f);
         f1.setOnClickListener(v -> abrirConfiguracaoSim(1));
-        Button f2 = button("Número fixo / Resetar");
         f2.setOnClickListener(v -> abrirConfiguracaoSim(2));
-        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        rp.setMargins(0, dp(8), dp(5), 0);
-        f1.setLayoutParams(rp);
-        LinearLayout.LayoutParams rp2 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        rp2.setMargins(dp(5), dp(8), 0, 0);
-        f2.setLayoutParams(rp2);
-        resets.addView(f1);
-        resets.addView(f2);
-        saldo.addView(resets);
-        content.addView(saldo);
+        LinearLayout.LayoutParams rp1 = new LinearLayout.LayoutParams(0, dp(40), 1f);
+        rp1.rightMargin = dp(4);
+        LinearLayout.LayoutParams rp2 = new LinearLayout.LayoutParams(0, dp(40), 1f);
+        rp2.leftMargin = dp(4);
+        f1.setLayoutParams(rp1); f2.setLayoutParams(rp2);
+        resets.addView(f1); resets.addView(f2);
+        saldoWrap.addView(resets);
+        content.addView(saldoWrap);
 
-        LinearLayout manual = card("Transferência manual");
-        EditText mb = input("Quantidade de MB (ex: 100)");
+        // 2 — TRANSFERÊNCIA MANUAL
+        LinearLayout manual = panel();
+        manual.addView(sectionTitle("↻", "Transferência manual", ""));
+        EditText mb = input("Insira a quantidade (MB)");
         mb.setInputType(InputType.TYPE_CLASS_NUMBER);
         manual.addView(mb);
-        EditText numero = input("Número do destinatário");
+        EditText numero = input("Insira o número do destinatário");
         numero.setInputType(InputType.TYPE_CLASS_PHONE);
         manual.addView(numero);
-        Button transferir = button("Transferir agora");
-        transferir.setBackground(round(0xFF22C55E, 12));
-        transferir.setTextColor(0xFF06280F);
-        resultadoTransferencia = text("", 12);
-        resultadoTransferencia.setTextColor(0xFF8792A6);
+        Button transferir = button("✈  Transferir agora");
+        transferir.setBackground(round(0xFF23C76B, 10));
+        transferir.setTextColor(Color.WHITE);
+        resultadoTransferencia = text("", 11);
+        resultadoTransferencia.setTextColor(0xFF94A3B8);
         transferir.setOnClickListener(v -> {
             try {
                 int quantidade = Integer.parseInt(mb.getText().toString().trim());
@@ -399,35 +490,59 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         manual.addView(transferir);
-        acessibilidadeView = status("Acessibilidade", UssdAccessibilityService.estaAtivo() ? "ATIVA" : "INATIVA");
-        manual.addView(acessibilidadeView);
-        Button acess = button("Abrir configuração de acessibilidade");
-        acess.setOnClickListener(v -> abrirConfigAcessibilidade());
-        manual.addView(acess);
         manual.addView(resultadoTransferencia);
         content.addView(manual);
 
-        LinearLayout credito = card("Transferência de crédito");
-        Button c1 = button("Usar SIM 1 para crédito");
-        Button c2 = button("Usar SIM 2 para crédito");
-        Button cn = button("Desativar crédito");
+        // 3 — ACESSIBILIDADE (seção própria, como na foto)
+        LinearLayout acessPanel = panel();
+        acessPanel.addView(sectionTitle("♿", "Acessibilidade", ""));
+        LinearLayout accessRow = new LinearLayout(this);
+        accessRow.setOrientation(LinearLayout.HORIZONTAL);
+        accessRow.setGravity(Gravity.CENTER_VERTICAL);
+        TextView check = smallIcon("✓", 0xFF39F27A);
+        check.setTextSize(28);
+        check.setBackground(round(0x001C5B43, 30));
+        accessRow.addView(check);
+        LinearLayout accessText = new LinearLayout(this);
+        accessText.setOrientation(LinearLayout.VERTICAL);
+        TextView al = text("Status", 12);
+        al.setTextColor(0xFFF2F5F9);
+        accessText.addView(al);
+        acessibilidadeView = status("", UssdAccessibilityService.estaAtivo() ? "ATIVA" : "INATIVA");
+        acessibilidadeView.setTextColor(UssdAccessibilityService.estaAtivo() ? 0xFF39F27A : 0xFFEF4444);
+        acessibilidadeView.setPadding(0, 0, 0, 0);
+        accessText.addView(acessibilidadeView);
+        accessRow.addView(accessText, new LinearLayout.LayoutParams(0, -2, 1f));
+        Button acess = button("Abrir configuração  ⚙");
+        acess.setTextSize(10.5f);
+        acess.setLayoutParams(new LinearLayout.LayoutParams(dp(190), dp(44)));
+        acess.setOnClickListener(v -> abrirConfigAcessibilidade());
+        accessRow.addView(acess);
+        acessPanel.addView(accessRow);
+        content.addView(acessPanel);
+
+        // 4 — CONTINUAÇÃO DA SEGUNDA FOTO, na MESMA página/ScrollView.
+        LinearLayout credito = panel();
+        credito.addView(sectionTitle("⇄", "Transferência de crédito", "Envie crédito para outro número usando SIM 1 ou SIM 2."));
+        Button c1 = button("▣  Usar SIM 1 para crédito                         ›");
+        Button c2 = button("▣  Usar SIM 2 para crédito                         ›");
+        Button cn = button("⏻  Desativar crédito                                  ›");
+        c1.setTextColor(0xFF8CFF59); c2.setTextColor(0xFF5FA8FF); cn.setTextColor(0xFFFFA43D);
         c1.setOnClickListener(v -> definirSimCredito(1));
         c2.setOnClickListener(v -> definirSimCredito(2));
         cn.setOnClickListener(v -> definirSimCredito(0));
-        credito.addView(c1);
-        credito.addView(c2);
-        credito.addView(cn);
-        EditText valor = input("Valor em MT (ex: 5)");
+        credito.addView(c1); credito.addView(c2); credito.addView(cn);
+        EditText valor = input("Valor em MT   Ex.: 50.00");
         valor.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         credito.addView(valor);
-        EditText numCredito = input("Número do destinatário");
+        EditText numCredito = input("Número do destinatário   Ex.: 84 XXX XXXX");
         numCredito.setInputType(InputType.TYPE_CLASS_PHONE);
         credito.addView(numCredito);
-        resultadoCredito = text("", 12);
-        resultadoCredito.setTextColor(0xFF8792A6);
-        Button transferirCredito = button("Transferir crédito agora");
-        transferirCredito.setBackground(round(0xFF22C55E, 12));
-        transferirCredito.setTextColor(0xFF06280F);
+        resultadoCredito = text("", 11);
+        resultadoCredito.setTextColor(0xFF94A3B8);
+        Button transferirCredito = button("✈  Transferir crédito agora");
+        transferirCredito.setBackground(round(0xFF5145E8, 10));
+        transferirCredito.setTextColor(Color.WHITE);
         transferirCredito.setOnClickListener(v -> {
             String val = valor.getText().toString().trim();
             String n = numCredito.getText().toString().trim();
@@ -441,34 +556,36 @@ public class MainActivity extends AppCompatActivity {
         credito.addView(resultadoCredito);
         content.addView(credito);
 
-        LinearLayout permissoes = card("Permissões e sistema");
-        Button chamadas = button("Permitir chamadas / USSD");
+        // 5 — PERMISSÕES E SISTEMA
+        LinearLayout permissoes = panel();
+        permissoes.addView(sectionTitle("♢", "Permissões e sistema", "Configure permissões e otimizações necessárias para o funcionamento."));
+        Button chamadas = button("☎  Permitir chamadas / USSD\n     Necessário para comandos e consultas.");
         chamadas.setOnClickListener(v -> pedirPermissoesChamadas());
         permissoes.addView(chamadas);
-        Button bateria = button("Configurar otimização da bateria");
+        Button bateria = button("▣  Configurar otimização da bateria\n     Permitir execução em segundo plano.");
         bateria.setOnClickListener(v -> abrirConfigBateria());
         permissoes.addView(bateria);
-        Button admin = button("Configurar administrador do dispositivo");
+        Button admin = button("♢  Configurar administrador do dispositivo\n     Maior controle e estabilidade do sistema.");
         admin.setOnClickListener(v -> abrirConfigDeviceAdmin());
         permissoes.addView(admin);
-        Button overlay = button("Permissão de sobreposição");
+        Button overlay = button("▣  Permissão de sobreposição\n     Exibir sobre outros aplicativos.");
         overlay.setOnClickListener(v -> abrirConfigOverlay());
         permissoes.addView(overlay);
-        Button notificacoes = button("Permitir leitura de notificações (.enviar /.saldo)");
+        Button notificacoes = button("●  Permitir leitura de notificações\n     Capturar notificações do sistema.");
         notificacoes.setOnClickListener(v -> abrirConfigNotificacoes());
         permissoes.addView(notificacoes);
 
-        Button btnIniciar = button("INICIAR MONITORAMENTO AUTO");
-        btnIniciar.setBackground(round(0xFF22C55E, 12));
-        btnIniciar.setTextColor(0xFF06280F);
+        Button btnIniciar = button("🚀  INICIAR MONITORAMENTO AUTO\n     Inicia o monitoramento automático em segundo plano.");
+        btnIniciar.setBackground(round(0xFF23C76B, 12));
+        btnIniciar.setTextColor(Color.WHITE);
         btnIniciar.setOnClickListener(v -> {
             iniciarMonitorService();
             Toast.makeText(this, "Monitoramento automático ativado.", Toast.LENGTH_SHORT).show();
         });
         permissoes.addView(btnIniciar);
 
-        Button btnParar = button("PARAR MONITORAMENTO");
-        btnParar.setBackground(round(0xFFEF4444, 12));
+        Button btnParar = button("■  PARAR MONITORAMENTO\n     Interrompe todo o monitoramento e processos em execução.");
+        btnParar.setBackground(round(0xFFD72F2F, 12));
         btnParar.setTextColor(Color.WHITE);
         btnParar.setOnClickListener(v -> {
             try {
@@ -480,6 +597,12 @@ public class MainActivity extends AppCompatActivity {
         });
         permissoes.addView(btnParar);
         content.addView(permissoes);
+
+        TextView lock = text("🔒  Suas configurações são protegidas e criptografadas.", 10.5f);
+        lock.setTextColor(0xFF8A96A8);
+        lock.setGravity(Gravity.CENTER);
+        lock.setPadding(0, dp(2), 0, dp(8));
+        content.addView(lock);
         return content;
     }
 

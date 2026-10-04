@@ -20,12 +20,13 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.widget.FrameLayout;
 import android.app.AlertDialog;
+import android.widget.Button; // <-- FALTAVA ESSA LINHA
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
-import com.lacoste.auto.PollingService; // <- COLA AQUI
+import com.lacoste.auto.PollingService;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;

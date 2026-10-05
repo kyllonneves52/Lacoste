@@ -16,7 +16,7 @@ vercel --prod
 Defina a senha do admin na sessão:
 export ADMIN_PASSWORD='A_TUA_SENHA_DO_ADMIN'
 
-curl -s -X POST 'https://kyllon.vercel.app/api/setup'   -H 'X-Admin-Password: '"$ADMIN_PASSWORD"
+curl -s -X POST 'https://lacoste.hyzecloud.app/api/setup'   -H 'X-Admin-Password: '"$ADMIN_PASSWORD"
 
 5) Se o setup devolver ok:true, a base foi atualizada.
 

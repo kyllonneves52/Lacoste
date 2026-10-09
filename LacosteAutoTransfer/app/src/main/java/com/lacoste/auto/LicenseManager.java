@@ -93,7 +93,49 @@ public class LicenseManager {
     private static void fail(Context c,Callback cb,String m){ultimoMotivo=m;if(cb!=null)cb.onResultado(false,m);}
     private static JSONObject post(String u,JSONObject b)throws Exception{return request(u,"POST",b);}
     private static JSONObject get(String u)throws Exception{return request(u,"GET",null);}
-    private static JSONObject request(String us,String method,JSONObject b)throws Exception{java.net.HttpURLConnection c=(java.net.HttpURLConnection)new java.net.URL(us).openConnection();c.setRequestMethod(method);c.setConnectTimeout(15000);c.setReadTimeout(15000);c.setRequestProperty("Content-Type","application/json");if(b!=null){c.setDoOutput(true);try(java.io.OutputStream o=c.getOutputStream()){o.write(b.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));}}java.io.InputStream in=c.getResponseCode()>=400?c.getErrorStream():c.getInputStream();if(in==null)return null;java.io.BufferedReader br=new java.io.BufferedReader(new java.io.InputStreamReader(in));StringBuilder s=new StringBuilder();String l;while((l=br.readLine())!=null)s.append(l);c.disconnect();return new JSONObject(s.toString());}
+    private static JSONObject request(String us,String method,JSONObject b)throws Exception{
+        java.net.HttpURLConnection c=(java.net.HttpURLConnection)new java.net.URL(us).openConnection();
+        c.setRequestMethod(method);
+        c.setConnectTimeout(15000);
+        c.setReadTimeout(15000);
+        c.setRequestProperty("Content-Type","application/json");
+        c.setRequestProperty("Accept","application/json");
+        if(b!=null){
+            c.setDoOutput(true);
+            try(java.io.OutputStream o=c.getOutputStream()){
+                o.write(b.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+        }
+        int code=c.getResponseCode();
+        java.io.InputStream in=code>=400?c.getErrorStream():c.getInputStream();
+        if(in==null) return null;
+        java.io.BufferedReader br=new java.io.BufferedReader(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8));
+        StringBuilder s=new StringBuilder();
+        String l;
+        while((l=br.readLine())!=null) s.append(l);
+        c.disconnect();
+        return parseResposta(s.toString(), code);
+    }
+    private static JSONObject parseResposta(String raw, int code) throws Exception {
+        String body = raw == null ? "" : raw.trim();
+        if (body.startsWith("\uFEFF")) body = body.substring(1).trim();
+        if (body.isEmpty()) throw new Exception("Servidor respondeu vazio (HTTP " + code + ").");
+        try {
+            if (body.startsWith("{")) return new JSONObject(body);
+            if (body.startsWith("[")) {
+                JSONObject wrap = new JSONObject();
+                wrap.put("ok", false);
+                wrap.put("message", "Resposta inesperada em lista.");
+                return wrap;
+            }
+            // Corpo texto, ou JSON string tipo "Payment": o parser antigo rebentava aqui.
+            String visivel = body.length() > 180 ? body.substring(0, 180) : body;
+            throw new Exception("O servidor nao devolveu JSON. HTTP " + code + ": " + visivel);
+        } catch (org.json.JSONException e) {
+            String visivel = body.length() > 180 ? body.substring(0, 180) : body;
+            throw new Exception("Resposta invalida (HTTP " + code + "): " + visivel);
+        }
+    }
     public static long millisRestantes(Context c){try{String d=LicenseStorage.ler(c);return Math.max(0,Long.parseLong(pegar(d,"DATA_FINAL"))-System.currentTimeMillis());}catch(Exception e){return 0;}}
     public static String tempoRestante(Context c){long r=millisRestantes(c);if(r<=0)return "EXPIRADO";return (r/86400000L)+" dias "+((r%86400000L)/3600000L)+" horas "+((r%3600000L)/60000L)+" minutos";}
     private static String pegar(String t,String k){if(t==null)return "";for(String l:t.split("\\n"))if(l.startsWith(k+"="))return l.substring((k+"=").length()).trim();return "";}

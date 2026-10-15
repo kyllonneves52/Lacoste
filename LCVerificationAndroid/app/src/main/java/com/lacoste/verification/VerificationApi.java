@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 import org.json.JSONObject;
 
 public final class VerificationApi {
-    private static final String BASE = "https://kyllon.vercel.app";
+    private static final String BASE = "https://lacoste.hyzecloud.app";
     private VerificationApi() {}
 
     static JSONObject req(String path, String method, JSONObject body, String token, String deviceId) throws Exception {
@@ -30,14 +30,36 @@ public final class VerificationApi {
                 o.write(body.toString().getBytes(StandardCharsets.UTF_8));
             }
         }
-        InputStream in = c.getResponseCode() >= 400 ? c.getErrorStream() : c.getInputStream();
-        if (in == null) return null;
-        BufferedReader r = new BufferedReader(new InputStreamReader(in));
+        int httpStatus = c.getResponseCode();
+        InputStream in = httpStatus >= 400 ? c.getErrorStream() : c.getInputStream();
+        if (in == null) {
+            JSONObject empty = new JSONObject();
+            empty.put("ok", false);
+            empty.put("httpStatus", httpStatus);
+            empty.put("message", "Servidor respondeu sem conteúdo (HTTP " + httpStatus + ").");
+            c.disconnect();
+            return empty;
+        }
+        BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
         StringBuilder s = new StringBuilder();
         String l;
         while ((l = r.readLine()) != null) s.append(l);
         c.disconnect();
-        return new JSONObject(s.toString());
+        String raw = s.toString().trim();
+        try {
+            JSONObject result = new JSONObject(raw);
+            if (!result.has("httpStatus")) result.put("httpStatus", httpStatus);
+            return result;
+        } catch (org.json.JSONException notJson) {
+            // The API/proxy can return plain text (for example "Payment ...").
+            // Convert it to a structured error instead of crashing on JSONObject.
+            JSONObject result = new JSONObject();
+            result.put("ok", false);
+            result.put("httpStatus", httpStatus);
+            result.put("message", raw.isEmpty() ? "Resposta vazia do servidor." : raw);
+            result.put("rawResponse", raw);
+            return result;
+        }
     }
 
     public static JSONObject requestLicense(Context c, String key) throws Exception {

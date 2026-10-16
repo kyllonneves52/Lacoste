@@ -41,7 +41,8 @@ public final class SmsParser {
     public static boolean isIncoming(String t) {
         if (t == null || t.trim().isEmpty()) return false;
         if (!P_RECEBEU.matcher(t).find()) return false;
-        return !P_ENVIO.matcher(t).find() || P_RECEBEU.matcher(t).find();
+        // Nunca tratar um SMS que descreve uma transferência enviada como recebimento.
+        return !P_ENVIO.matcher(t).find();
     }
 
     public static String provider(String t) {
@@ -69,8 +70,12 @@ public final class SmsParser {
     public static double value(String t) {
         if (t == null) return -1;
         Matcher m = P_VALOR_RECEBEU.matcher(t);
-        if (!m.find()) m = P_VALOR_ANTES.matcher(t);
-        if (!m.find()) return -1;
+        boolean found = m.find();
+        if (!found) {
+            m = P_VALOR_ANTES.matcher(t);
+            found = m.find();
+        }
+        if (!found) return -1;
         try {
             return Double.parseDouble(m.group(1).replace(',', '.'));
         } catch (Exception e) {

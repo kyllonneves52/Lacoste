@@ -49,11 +49,9 @@ public final class VerificationProcessor {
             new Thread(() -> {
                 try {
                     JSONObject response = VerificationApi.verifySms(c, text, from, payId, amt, provider);
-                    // Only clear the local pending item after the server explicitly accepted
-                    // the receipt or safely stored it for matching with an order created later.
-                    if (response != null && response.optBoolean("ok", false)
-                            && ("verified".equalsIgnoreCase(response.optString("status"))
-                                || response.optBoolean("stored", false))) {
+                    boolean verified = response != null && "verified".equalsIgnoreCase(response.optString("status", ""));
+                    boolean stored = response != null && response.optBoolean("stored", false);
+                    if (verified || stored) {
                         VerificationStore.clearPending(c);
                     }
                 } catch (Exception ignored) {}

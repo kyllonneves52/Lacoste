@@ -108,7 +108,7 @@ public class Prefs {
     }
 
     public static String getUrlPainel(Context ctx) {
-        return sp(ctx).getString(KEY_URL_PAINEL, "https://kyllon.vercel.app");
+        return sp(ctx).getString(KEY_URL_PAINEL, "https://lacoste.hyzecloud.app");
     }
 
     public static String getLicenseRequestId(Context ctx) {

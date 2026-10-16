@@ -37,7 +37,7 @@ public final class VerificationApi {
             try (BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
                 String l;
                 while ((l = r.readLine()) != null) {
-                    if (s.length() > 0) s.append('\\n');
+                    if (s.length() > 0) s.append('\n');
                     s.append(l);
                 }
             }

@@ -449,20 +449,66 @@ public class ApiClient {
             int codigo = conn.getResponseCode();
             InputStream is = (codigo < 200 || codigo >= 300) ? conn.getErrorStream() : conn.getInputStream();
             if (is == null) {
-                return null;
+                JSONObject empty = new JSONObject();
+                empty.put("ok", false);
+                empty.put("message", "Sem corpo de resposta (HTTP " + codigo + ")");
+                empty.put("httpStatus", codigo);
+                return empty;
             }
             BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder();
-            while (true) {
-                String linha = br.readLine();
-                if (linha == null) {
-                    br.close();
-                    return new JSONObject(sb.toString());
-                }
+            String linha;
+            while ((linha = br.readLine()) != null) {
+                if (sb.length() > 0) sb.append('\n');
                 sb.append(linha);
             }
+            br.close();
+            String raw = sb.toString().trim();
+            if (raw.isEmpty()) {
+                JSONObject empty = new JSONObject();
+                empty.put("ok", false);
+                empty.put("message", "Resposta vazia (HTTP " + codigo + ")");
+                empty.put("httpStatus", codigo);
+                return empty;
+            }
+            // Texto puro / HTML / Vercel "Payment required" etc.
+            if (!raw.startsWith("{") && !raw.startsWith("[")) {
+                JSONObject err = new JSONObject();
+                err.put("ok", false);
+                String msg = raw;
+                if (codigo == 402 || raw.toLowerCase(java.util.Locale.ROOT).contains("payment required")
+                        || raw.toLowerCase(java.util.Locale.ROOT).contains("deployment_disabled")) {
+                    msg = "Deploy desativado no Vercel (Payment required / HTTP 402). Ative o projeto ou pague o plano.";
+                } else if (raw.length() > 200) {
+                    msg = raw.substring(0, 200) + "…";
+                }
+                err.put("message", msg);
+                err.put("httpStatus", codigo);
+                return err;
+            }
+            try {
+                JSONObject result = new JSONObject(raw);
+                if (!result.has("httpStatus")) result.put("httpStatus", codigo);
+                if ((codigo < 200 || codigo >= 300) && !result.has("ok")) {
+                    result.put("ok", false);
+                }
+                return result;
+            } catch (Exception parseEx) {
+                JSONObject err = new JSONObject();
+                err.put("ok", false);
+                err.put("message", "Resposta inválida (HTTP " + codigo + "): " + (raw.length() > 120 ? raw.substring(0, 120) + "…" : raw));
+                err.put("httpStatus", codigo);
+                return err;
+            }
         } catch (Exception e) {
-            return null;
+            try {
+                JSONObject err = new JSONObject();
+                err.put("ok", false);
+                err.put("message", "Erro ao ler resposta: " + e.getMessage());
+                return err;
+            } catch (Exception ignored) {
+                return null;
+            }
         }
     }
 

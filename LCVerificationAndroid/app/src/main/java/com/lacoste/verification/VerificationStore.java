@@ -72,7 +72,10 @@ public final class VerificationStore {
             o.put("at", System.currentTimeMillis());
             JSONArray next = new JSONArray();
             next.put(o);
-            for (int i = 0; i < arr.length() && i < 19; i++) next.put(arr.getJSONObject(i));
+            for (int i = 0; i < arr.length() && i < 19; i++) {
+                JSONObject item = arr.optJSONObject(i);
+                if (item != null) next.put(item);
+            }
             p(c).edit().putString("recent_in", next.toString()).apply();
         } catch (Exception ignored) {}
     }
@@ -92,7 +95,8 @@ public final class VerificationStore {
             long now = System.currentTimeMillis();
             JSONArray arr = recentIncoming(c);
             for (int i = 0; i < arr.length(); i++) {
-                JSONObject o = arr.getJSONObject(i);
+                JSONObject o = arr.optJSONObject(i);
+                if (o == null) continue;
                 if (now - o.optLong("at") > maxAgeMs) continue;
                 if (!want.equalsIgnoreCase(o.optString("norm"))) continue;
                 if (value > 0 && Math.abs(o.optDouble("value") - value) > 0.05) continue;

@@ -37,7 +37,15 @@ public class LicenseManager {
                 JSONObject r = post(base + "/api/licenca/request", b);
                 if (r == null) { fail(context, cb, "Sem resposta do servidor."); return; }
                 boolean ok = r.optBoolean("ok", false);
-                if (!ok) { fail(context, cb, r.optString("message", "Não foi possível enviar o pedido.")); return; }
+                if (!ok) {
+                    String msg = r.optString("message", r.optString("error", "Não foi possível enviar o pedido."));
+                    int http = r.optInt("httpStatus", 0);
+                    if (http == 402 || (msg != null && msg.toLowerCase(Locale.ROOT).contains("payment"))) {
+                        msg = "Deploy desativado no Vercel (Payment required). Ative o projeto no painel Vercel.";
+                    }
+                    fail(context, cb, msg);
+                    return;
+                }
                 String status = r.optString("status", "pending");
                 String rid = r.optString("requestId", "");
                 if (!rid.isEmpty()) Prefs.setLicenseRequestId(context, rid);
@@ -91,9 +99,76 @@ public class LicenseManager {
     }
     private static String androidId(Context c){String x=Settings.Secure.getString(c.getContentResolver(),"android_id");return x==null?"desconhecido":x;}
     private static void fail(Context c,Callback cb,String m){ultimoMotivo=m;if(cb!=null)cb.onResultado(false,m);}
-    private static JSONObject post(String u,JSONObject b)throws Exception{return request(u,"POST",b);}
-    private static JSONObject get(String u)throws Exception{return request(u,"GET",null);}
-    private static JSONObject request(String us,String method,JSONObject b)throws Exception{java.net.HttpURLConnection c=(java.net.HttpURLConnection)new java.net.URL(us).openConnection();c.setRequestMethod(method);c.setConnectTimeout(15000);c.setReadTimeout(15000);c.setRequestProperty("Content-Type","application/json");if(b!=null){c.setDoOutput(true);try(java.io.OutputStream o=c.getOutputStream()){o.write(b.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));}}java.io.InputStream in=c.getResponseCode()>=400?c.getErrorStream():c.getInputStream();if(in==null)return null;java.io.BufferedReader br=new java.io.BufferedReader(new java.io.InputStreamReader(in));StringBuilder s=new StringBuilder();String l;while((l=br.readLine())!=null)s.append(l);c.disconnect();return new JSONObject(s.toString());}
+    private static JSONObject post(String u, JSONObject b) throws Exception { return request(u, "POST", b); }
+    private static JSONObject get(String u) throws Exception { return request(u, "GET", null); }
+    private static JSONObject request(String us, String method, JSONObject b) throws Exception {
+        java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(us).openConnection();
+        c.setRequestMethod(method);
+        c.setConnectTimeout(15000);
+        c.setReadTimeout(15000);
+        c.setRequestProperty("Content-Type", "application/json");
+        c.setRequestProperty("Accept", "application/json");
+        if (b != null) {
+            c.setDoOutput(true);
+            try (java.io.OutputStream o = c.getOutputStream()) {
+                o.write(b.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+        }
+        int status = c.getResponseCode();
+        java.io.InputStream in = status >= 400 ? c.getErrorStream() : c.getInputStream();
+        StringBuilder s = new StringBuilder();
+        if (in != null) {
+            try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8))) {
+                String l;
+                while ((l = br.readLine()) != null) {
+                    if (s.length() > 0) s.append('\n');
+                    s.append(l);
+                }
+            }
+        }
+        c.disconnect();
+        String raw = s.toString().trim();
+        // Respostas não-JSON (ex.: Vercel 402 "Payment required", HTML de erro, texto puro)
+        if (raw.isEmpty()) {
+            JSONObject empty = new JSONObject();
+            empty.put("ok", false);
+            empty.put("message", "Sem resposta do servidor (HTTP " + status + ")");
+            empty.put("httpStatus", status);
+            return empty;
+        }
+        if (!raw.startsWith("{") && !raw.startsWith("[")) {
+            JSONObject err = new JSONObject();
+            err.put("ok", false);
+            String msg = raw;
+            if (status == 402 || raw.toLowerCase(java.util.Locale.ROOT).contains("payment required")
+                    || raw.toLowerCase(java.util.Locale.ROOT).contains("deployment_disabled")) {
+                msg = "Deploy desativado no Vercel (Payment required / HTTP 402). Ative o projeto ou pague o plano.";
+            } else if (raw.length() > 200) {
+                msg = raw.substring(0, 200) + "…";
+            }
+            err.put("message", msg);
+            err.put("httpStatus", status);
+            err.put("raw", raw.length() > 500 ? raw.substring(0, 500) : raw);
+            return err;
+        }
+        try {
+            JSONObject result = new JSONObject(raw);
+            if (!result.has("httpStatus")) result.put("httpStatus", status);
+            if (status < 200 || status >= 300) {
+                if (!result.has("ok")) result.put("ok", false);
+                if (!result.has("message") && !result.has("error")) {
+                    result.put("message", "Erro HTTP " + status);
+                }
+            }
+            return result;
+        } catch (Exception parseEx) {
+            JSONObject err = new JSONObject();
+            err.put("ok", false);
+            err.put("message", "Resposta inválida do servidor (HTTP " + status + "): " + (raw.length() > 120 ? raw.substring(0, 120) + "…" : raw));
+            err.put("httpStatus", status);
+            return err;
+        }
+    }
     public static long millisRestantes(Context c){try{String d=LicenseStorage.ler(c);return Math.max(0,Long.parseLong(pegar(d,"DATA_FINAL"))-System.currentTimeMillis());}catch(Exception e){return 0;}}
     public static String tempoRestante(Context c){long r=millisRestantes(c);if(r<=0)return "EXPIRADO";return (r/86400000L)+" dias "+((r%86400000L)/3600000L)+" horas "+((r%3600000L)/60000L)+" minutos";}
     private static String pegar(String t,String k){if(t==null)return "";for(String l:t.split("\\n"))if(l.startsWith(k+"="))return l.substring((k+"=").length()).trim();return "";}

@@ -28,19 +28,21 @@ public class PollingService {
                     public void onPedidos(JSONArray pedidos) {
                         try {
                             if (pedidos.length() > 0) {
-                                JSONObject pedido = pedidos.getJSONObject(0); // pega o primeiro da fila
-                                String pedidoId = pedido.getString("pedidoId");
-                                
-                                // só executa se for pedido novo
-                                if (!pedidoId.equals(ultimoPedidoId)) {
-                                    ultimoPedidoId = pedidoId;
-                                    AppLog.add(ctx, "Polling", "NOVO PEDIDO: " + pedidoId);
-                                    
-                                    // CHAMA O TRANSFER SERVICE NA HORA
-                                    // O MonitorService é o executor oficial; o PollingService não deve duplicar a transferência.
-                                    Intent i = new Intent(ctx, MonitorService.class);
-                                    i.setAction(MonitorService.ACTION_WAKE);
-                                    if (android.os.Build.VERSION.SDK_INT >= 26) ctx.startForegroundService(i); else ctx.startService(i);
+                                JSONObject pedido = pedidos.optJSONObject(0); // seguro: evita crash se o item não for objeto
+                                if (pedido == null) {
+                                    AppLog.add(ctx, "Polling", "Item da fila não é JSONObject, ignorado.");
+                                } else {
+                                    String pedidoId = pedido.optString("pedidoId", "");
+                                    if (pedidoId.isEmpty()) pedidoId = pedido.optString("id", "");
+                                    // só executa se for pedido novo
+                                    if (!pedidoId.isEmpty() && !pedidoId.equals(ultimoPedidoId)) {
+                                        ultimoPedidoId = pedidoId;
+                                        AppLog.add(ctx, "Polling", "NOVO PEDIDO: " + pedidoId);
+                                        // O MonitorService é o executor oficial; o PollingService não deve duplicar a transferência.
+                                        Intent i = new Intent(ctx, MonitorService.class);
+                                        i.setAction(MonitorService.ACTION_WAKE);
+                                        if (android.os.Build.VERSION.SDK_INT >= 26) ctx.startForegroundService(i); else ctx.startService(i);
+                                    }
                                 }
                             }
                         } catch (Exception e) {

@@ -46,12 +46,19 @@ public final class VerificationApi {
         String raw = s.toString().trim();
         JSONObject result;
         try {
-            result = raw.startsWith("{") ? new JSONObject(raw) : new JSONObject();
+            result = (raw.startsWith("{") || raw.startsWith("[")) ? new JSONObject(raw) : new JSONObject();
         } catch (Exception ignored) {
             result = new JSONObject();
         }
         if (!result.has("message") && !result.has("error") && !raw.isEmpty() && !raw.startsWith("{")) {
-            result.put("message", raw);
+            String msg = raw;
+            if (status == 402 || raw.toLowerCase(java.util.Locale.ROOT).contains("payment required")
+                    || raw.toLowerCase(java.util.Locale.ROOT).contains("deployment_disabled")) {
+                msg = "Deploy desativado no servidor (Payment required / HTTP 402). Ative o projeto ou verifique o plano.";
+            } else if (raw.length() > 200) {
+                msg = raw.substring(0, 200) + "…";
+            }
+            result.put("message", msg);
         }
         result.put("httpStatus", status);
         if (status < 200 || status >= 300) result.put("ok", false);

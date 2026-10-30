@@ -225,4 +225,48 @@ public class WebAppInterface {
         activity.abrirConfigNotificacoes();
     }
 
+    // =========================================================
+    // PEDIDOS / CÓDIGO BOT / COPIAR (acrescentos)
+    // =========================================================
+
+    @JavascriptInterface
+    public void listarPedidos() {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                activity.listarPedidosNaWeb();
+            }
+        });
+    }
+
+    @JavascriptInterface
+    public void libertarPedidos() {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                activity.libertarPedidosNaWeb();
+            }
+        });
+    }
+
+    @JavascriptInterface
+    public void copiarTexto(final String texto) {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                activity.copiarParaClipboard(texto);
+            }
+        });
+    }
+
+    @JavascriptInterface
+    public void mostrarCodigoBot(final String codigo) {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                activity.mostrarCodigoBotNaWeb(codigo);
+            }
+        });
+    }
+
 }

@@ -49,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView licencaView;
     private TextView licencaPerfil;
+    private TextView lucroResumoAuto;
+    private ProfitChartView lucroChartAuto;
     private LinearLayout historicoLista;
     private LinearLayout paginaInicio;
     private LinearLayout paginaHistorico;
@@ -346,6 +348,7 @@ public class MainActivity extends AppCompatActivity {
         navHistorico.setTextColor(index == 1 ? 0xFF22C55E : 0xFF94A3B8);
         navPerfil.setTextColor(index == 2 ? 0xFF22C55E : 0xFF94A3B8);
         if (index == 1) preencherHistorico();
+        if (index == 0 && lucroResumoAuto != null) atualizarResumoFinanceiro();
         if (index == 2 && licencaPerfil != null) {
             licencaPerfil.setText(LicenseManager.tempoRestante(this));
         }
@@ -588,6 +591,28 @@ public class MainActivity extends AppCompatActivity {
         credito.addView(resultadoCredito);
         content.addView(credito);
 
+        // PAINEL FINANCEIRO RESUMIDO — gestão completa fica no LC Verification.
+        LinearLayout financeiro = panel();
+        financeiro.addView(sectionTitle("📊", "Resumo financeiro", "Dados sincronizados com a API; configure os preços no LC Verification."));
+        lucroResumoAuto = text("Hoje: — MT\n7 dias: — MT\nMês: — MT", 13);
+        lucroResumoAuto.setTextColor(0xFFE5E9F0);
+        financeiro.addView(lucroResumoAuto);
+        lucroChartAuto = new ProfitChartView(this);
+        lucroChartAuto.setBackground(round(0xFF172538, 12));
+        LinearLayout.LayoutParams lucroChartLp = new LinearLayout.LayoutParams(-1, dp(150));
+        lucroChartLp.topMargin = dp(8);
+        financeiro.addView(lucroChartAuto, lucroChartLp);
+        Button atualizarFinanceiro = button("↻  Atualizar resumo financeiro");
+        atualizarFinanceiro.setOnClickListener(v -> atualizarResumoFinanceiro());
+        financeiro.addView(atualizarFinanceiro);
+        Button abrirLCV = button("Abrir gestão financeira no LC Verification");
+        abrirLCV.setOnClickListener(v -> {
+            try { startActivity(getPackageManager().getLaunchIntentForPackage("com.lacoste.verification")); }
+            catch (Exception e) { Toast.makeText(this, "Instala o LC Verification para gerir a tabela e o histórico.", Toast.LENGTH_LONG).show(); }
+        });
+        financeiro.addView(abrirLCV);
+        content.addView(financeiro);
+
         // 5 — PERMISSÕES E SISTEMA
         LinearLayout permissoes = panel();
         permissoes.addView(sectionTitle("♢", "Permissões e sistema", "Configure permissões e otimizações necessárias para o funcionamento."));
@@ -647,6 +672,25 @@ public class MainActivity extends AppCompatActivity {
         s.setClipToPadding(true);
         s.setBackground(round(0xFF1E2838, 14));
         return s;
+    }
+
+    private void atualizarResumoFinanceiro() {
+        if (lucroResumoAuto != null) lucroResumoAuto.setText("A sincronizar com a API...");
+        ApiClient.carregarPainelFinanceiro(this, (ok, raw) -> runOnUiThread(() -> {
+            if (!ok) { if (lucroResumoAuto != null) lucroResumoAuto.setText("Painel indisponível: " + raw); return; }
+            try {
+                org.json.JSONObject data = new org.json.JSONObject(raw);
+                org.json.JSONObject t = data.optJSONObject("totals");
+                String resumo = String.format(java.util.Locale.getDefault(),
+                        "Hoje: %.2f MT  (%d vendas)\n7 dias: %.2f MT  (%d vendas)\nMês: %.2f MT  (%d vendas)\nAcumulado: %.2f MT",
+                        t==null?0:t.optDouble("today"),t==null?0:t.optInt("todayCount"),
+                        t==null?0:t.optDouble("week"),t==null?0:t.optInt("weekCount"),
+                        t==null?0:t.optDouble("month"),t==null?0:t.optInt("monthCount"),
+                        t==null?0:t.optDouble("all"));
+                lucroResumoAuto.setText(resumo);
+                lucroChartAuto.setData(data.optJSONArray("daily"));
+            } catch (Exception e) { lucroResumoAuto.setText("Resposta financeira inválida: " + e.getMessage()); }
+        }));
     }
 
     private LinearLayout construirHistorico() {
@@ -956,6 +1000,88 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             AppLog.add(this, "MainActivity", "Erro ao iniciar MonitorService: " + e.getMessage());
         }
+    }
+
+
+    // ---- Pedidos / código bot (acrescentos) ----
+    public void listarPedidosNaWeb() {
+        // Actualiza histórico local e puxa fila do servidor
+        preencherHistorico();
+        ApiClient.buscarPedidos(this, new ApiClient.PedidosCallback() {
+            @Override
+            public void onPedidos(org.json.JSONArray pedidos) {
+                runOnUiThread(() -> {
+                    try {
+                        if (historicoLista == null) return;
+                        // acrescenta pedidos da API no topo com data/hora
+                        java.text.SimpleDateFormat fmt = new java.text.SimpleDateFormat("dd/MM HH:mm:ss", java.util.Locale.getDefault());
+                        for (int i = 0; i < pedidos.length(); i++) {
+                            org.json.JSONObject p = pedidos.optJSONObject(i);
+                            if (p == null) continue;
+                            String quando = p.optString("created_at", p.optString("criado", p.optString("timestamp", "")));
+                            try {
+                                if (quando.length() >= 19) {
+                                    // keep as is or format
+                                } else if (quando.matches("\\d+")) {
+                                    quando = fmt.format(new java.util.Date(Long.parseLong(quando)));
+                                }
+                            } catch (Exception ignored) {}
+                            String linha = "Fila API · " + quando
+                                + "\n" + p.optString("numero", "—") + " — "
+                                + p.optInt("quantidadeMB", p.optInt("mb", 0)) + "MB · "
+                                + p.optString("status", "—")
+                                + " · ref " + p.optString("id", p.optString("pedidoId", ""));
+                            TextView item = text(linha, 13);
+                            item.setTextColor(0xFF22C55E);
+                            item.setBackground(round(0xFF171F2E, 12));
+                            item.setPadding(dp(12), dp(10), dp(12), dp(10));
+                            LinearLayout.LayoutParams ip = new LinearLayout.LayoutParams(-1, -2);
+                            ip.topMargin = dp(8);
+                            item.setLayoutParams(ip);
+                            historicoLista.addView(item, 0);
+                        }
+                        Toast.makeText(MainActivity.this, "Pedidos: " + pedidos.length(), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Toast.makeText(MainActivity.this, "Erro UI pedidos: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+            @Override
+            public void onErro(String msg) {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Pedidos: " + msg, Toast.LENGTH_SHORT).show());
+            }
+        });
+    }
+
+    public void libertarPedidosNaWeb() {
+        listarPedidosNaWeb();
+        Toast.makeText(this, "A libertar / actualizar fila...", Toast.LENGTH_SHORT).show();
+    }
+
+    public void copiarParaClipboard(String texto) {
+        try {
+            android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            cm.setPrimaryClip(android.content.ClipData.newPlainText("codigo", texto));
+            Toast.makeText(this, "Código copiado: " + texto, Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Falha ao copiar", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void mostrarCodigoBotNaWeb(String codigo) {
+        // Mostra diálogo para copiar código enviado pelo bot
+        runOnUiThread(() -> {
+            try {
+                new AlertDialog.Builder(this)
+                    .setTitle("Código do bot")
+                    .setMessage(codigo == null ? "" : codigo)
+                    .setPositiveButton("Copiar", (d, w) -> copiarParaClipboard(codigo))
+                    .setNegativeButton("Fechar", null)
+                    .show();
+            } catch (Exception e) {
+                Toast.makeText(this, "Código: " + codigo, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     public boolean acessoNotificacoesAtivo() {

@@ -202,6 +202,29 @@
   </div>
 
   <div class="card">
+    <h2>Pedidos (fila + histórico)</h2>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <button class="btn-secondary" style="width:auto;padding:8px 12px" onclick="carregarPedidos()">🔄 Actualizar</button>
+      <button class="btn-secondary" style="width:auto;padding:8px 12px" onclick="libertarPedidos()">🔓 Libertar</button>
+    </div>
+    <div id="lista-pedidos" style="font-size:13px;color:var(--muted)">
+      Toque em Actualizar para ver pedidos da API com data e hora.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Resumo financeiro</h2>
+    <div style="font-size:13px;color:var(--muted)">Os valores, a tabela de lucro e os gráficos são sincronizados pela API e geridos no LC Verification. Este ecrã não guarda tabelas locais.</div>
+  </div>
+
+  <div class="card">
+    <h2>Código do bot (copiar)</h2>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 8px">Quando o bot enviar um código, aparece aqui para copiar sem sair do app.</p>
+    <div id="codigo-bot" style="font-family:monospace;font-size:18px;letter-spacing:2px;padding:12px;background:var(--card2);border-radius:12px;text-align:center;min-height:24px">—</div>
+    <button style="margin-top:10px" onclick="copiarCodigoBot()">📋 Copiar código</button>
+  </div>
+
+  <div class="card">
     <h2>Permissões e sistema</h2>
     <button class="btn-secondary" onclick="Android.pedirPermissoesChamadas()">
       <span>Permitir chamadas / USSD</span><span class="dot" id="dot-call"></span>
@@ -421,6 +444,58 @@
     document.getElementById(id).className = 'dot ' + (ok? 'ok' : 'bad');
   }
 
+
+  function carregarPedidos() {
+    var el = document.getElementById('lista-pedidos');
+    if (!el) return;
+    el.textContent = 'A carregar...';
+    try {
+      if (window.Android && Android.listarPedidos) Android.listarPedidos();
+      else el.innerHTML = '<span style="color:var(--muted)">Bridge Android.listarPedidos() — actualize o APK com WebAppInterface.</span>';
+    } catch (e) { el.textContent = 'Erro: ' + e.message; }
+  }
+  function mostrarPedidosJson(jsonStr) {
+    var el = document.getElementById('lista-pedidos');
+    if (!el) return;
+    try {
+      var data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+      var lista = data.pedidos || data.fila || data.items || [];
+      if (!lista.length) { el.innerHTML = 'Nenhum pedido na fila.'; return; }
+      var html = '';
+      lista.forEach(function (p, i) {
+        var hora = p.created_at || p.criado || p.hora || p.timestamp || p.updated_at || '';
+        if (hora && String(hora).length > 19) hora = String(hora).slice(0, 19).replace('T', ' ');
+        html += '<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06)">';
+        html += '<div style="color:var(--text);font-weight:600">' + (i+1) + '. ' + (p.numero || p.dest || '—') + ' · ' + (p.quantidadeMB || p.mb || p.quantidade || '') + 'MB</div>';
+        html += '<div style="font-size:11px;margin-top:4px">Estado: ' + (p.status || '—') + ' · Ref: ' + (p.ref || p.pagamentoId || p.id || '—') + '</div>';
+        html += '<div style="font-size:11px;color:var(--accent)">🕒 ' + (hora || 'sem hora') + '</div></div>';
+      });
+      el.innerHTML = html;
+    } catch (e) { el.textContent = String(jsonStr).slice(0, 500); }
+  }
+  function libertarPedidos() {
+    try {
+      if (window.Android && Android.libertarPedidos) Android.libertarPedidos();
+      else mostrarToast('Bridge libertarPedidos não disponível');
+      setTimeout(carregarPedidos, 800);
+    } catch (e) { mostrarToast(e.message); }
+  }
+  function mostrarCodigoBot(codigo) {
+    var el = document.getElementById('codigo-bot');
+    if (el) el.textContent = codigo || '—';
+  }
+  function copiarCodigoBot() {
+    var el = document.getElementById('codigo-bot');
+    var c = el ? el.textContent : '';
+    if (!c || c === '—') { mostrarToast('Sem código'); return; }
+    try {
+      if (window.Android && Android.copiarTexto) Android.copiarTexto(c);
+      else if (navigator.clipboard) navigator.clipboard.writeText(c);
+      mostrarToast('Copiado');
+    } catch (e) { mostrarToast(e.message); }
+  }
+
+  // original load
   window.addEventListener('load', () => {
     atualizarStatus();
     setInterval(atualizarStatus, 3000);

@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 import org.json.JSONObject;
 
 public final class VerificationApi {
-    private static final String BASE = "http://fi17.bot-hosting.cloud:25143";
+    private static final String BASE = "https://lacoste.hyzecloud.app";
     private VerificationApi() {}
 
     static JSONObject req(String path, String method, JSONObject body, String token, String deviceId) throws Exception {
@@ -88,7 +88,31 @@ public final class VerificationApi {
         b.put("androidId", VerificationStore.deviceId(c));
         b.put("fcmToken", fcm == null ? "" : fcm);
         b.put("deviceRole", "verification");
-        return req("/api/autosistema/verificacao/registar", "POST", b, VerificationStore.token(c), VerificationStore.deviceId(c));
+        JSONObject r = req("/api/autosistema/verificacao/registar", "POST", b, VerificationStore.token(c), VerificationStore.deviceId(c));
+        if (r.optBoolean("ok") && !r.optString("verificationToken").isEmpty()) {
+            VerificationStore.setToken(c, r.optString("verificationToken"));
+        }
+        return r;
+    }
+
+    public static JSONObject financeDashboard(Context c) throws Exception {
+        return req("/api/lcverification/finance/dashboard", "GET", null,
+                VerificationStore.token(c), VerificationStore.deviceId(c));
+    }
+
+    public static JSONObject saveProfitRule(Context c, int mb, double profit) throws Exception {
+        JSONObject b = new JSONObject();
+        b.put("quantityMb", mb);
+        b.put("profitMt", profit);
+        return req("/api/lcverification/finance/rules", "POST", b,
+                VerificationStore.token(c), VerificationStore.deviceId(c));
+    }
+
+    public static JSONObject deleteProfitRule(Context c, int mb) throws Exception {
+        JSONObject b = new JSONObject();
+        b.put("quantityMb", mb);
+        return req("/api/lcverification/finance/rules/delete", "POST", b,
+                VerificationStore.token(c), VerificationStore.deviceId(c));
     }
 
     public static JSONObject associarMb(Context c, String mbAndroidId, String fcm) throws Exception {

@@ -108,7 +108,12 @@ public class Prefs {
     }
 
     public static String getUrlPainel(Context ctx) {
-        return sp(ctx).getString(KEY_URL_PAINEL, "http://fi17.bot-hosting.cloud:25143");
+        String url = sp(ctx).getString(KEY_URL_PAINEL, "https://lacoste.hyzecloud.app");
+        if (url != null && url.startsWith("http://fi17.bot-hosting.cloud:25143")) {
+            url = "https://lacoste.hyzecloud.app";
+            setUrlPainel(ctx, url);
+        }
+        return url;
     }
 
     public static String getLicenseRequestId(Context ctx) {

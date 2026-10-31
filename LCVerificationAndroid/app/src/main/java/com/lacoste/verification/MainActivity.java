@@ -39,6 +39,8 @@ public class MainActivity extends Activity {
     TextView financeHistory;
     LinearLayout financeSection;
     ProfitChartView profitChartView;
+    EditText receiptSearch;
+    TextView receiptResult;
 
     static final int BG = Color.parseColor("#05070D");
     static final int CARD = Color.parseColor("#0A1220");
@@ -221,6 +223,24 @@ public class MainActivity extends Activity {
         Button saveProfit = btn("Guardar / atualizar pacote"); financeSection.addView(saveProfit);
         financeHistory = label("Histórico de vendas concluídas", false); financeHistory.setTextColor(TEXT); financeSection.addView(financeHistory);
         root.addView(financeSection);
+
+        LinearLayout salesSection = section("VENDAS E ESTATÍSTICAS");
+        salesSection.addView(label("Vendas por período, pacotes mais comprados e faturação confirmada.", false));
+        TextView salesStats = label("A carregar vendas…", false); salesStats.setTextColor(TEXT); salesSection.addView(salesStats);
+        TextView packageStats = label("Pacotes mais comprados", true); salesSection.addView(packageStats);
+        root.addView(salesSection);
+
+        LinearLayout searchSection = section("PESQUISAR COMPROVATIVO");
+        searchSection.addView(label("Pesquisa exata pela referência registada no servidor.", false));
+        receiptSearch = field("Referência do comprovativo"); searchSection.addView(receiptSearch);
+        Button searchReceipt = btn("Pesquisar referência"); searchSection.addView(searchReceipt);
+        receiptResult = label("Nenhuma pesquisa realizada.", false); receiptResult.setTextColor(TEXT); searchSection.addView(receiptResult);
+        root.addView(searchSection);
+        searchReceipt.setOnClickListener(v -> pesquisarComprovativo());
+
+        ProfitChartView salesChartView = new ProfitChartView(this);
+        salesChartView.setTitle("Vendas concluídas (30 dias)");
+        salesSection.addView(salesChartView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(180)));
         refreshFinance.setOnClickListener(v -> carregarFinanceiro());
         saveProfit.setOnClickListener(v -> guardarLucro());
 
@@ -244,8 +264,8 @@ public class MainActivity extends Activity {
         root.addView(foot);
 
         menuBtn.setOnClickListener(v -> {
-            final String[] opcoes = {"Início", "Estado", "Licença", "Associação mainMB", "Painel financeiro", "Permissões e manter ativo"};
-            final int[] indices = {1, 3, 4, 5, root.indexOfChild(financeSection), root.indexOfChild(sPerm)};
+            final String[] opcoes = {"Início", "Estado", "Licença", "Associação mainMB", "Painel financeiro", "Vendas e estatísticas", "Pesquisar comprovativo", "Permissões e manter ativo"};
+            final int[] indices = {1, 3, 4, 5, root.indexOfChild(financeSection), root.indexOfChild(salesSection), root.indexOfChild(searchSection), root.indexOfChild(sPerm)};
             new AlertDialog.Builder(this)
                     .setTitle("LC Verification — Menu")
                     .setItems(opcoes, (dialog, which) -> {
@@ -296,8 +316,17 @@ public class MainActivity extends Activity {
                 h.append("\nHISTÓRICO RECENTE\n");
                 org.json.JSONArray hist=r.optJSONArray("history");
                 if(hist!=null)for(int i=0;i<Math.min(hist.length(),15);i++){org.json.JSONObject x=hist.optJSONObject(i);if(x!=null)h.append(x.optString("completed_at")).append(" | ").append(x.optInt("mb")).append(" MB | +").append(x.optDouble("profit_mt",0)).append(" MT\n");}
-                String g=graf.toString(),hh=h.toString();runOnUiThread(()->{
+                org.json.JSONObject sales = sm == null ? new org.json.JSONObject() : sm.optJSONObject("sales");
+                String vendaResumo = "HOJE: " + (sales==null?0:sales.optInt("today")) + "\nONTEM: " + (sales==null?0:sales.optInt("yesterday")) + "\nANTEONTEM: " + (sales==null?0:sales.optInt("before_yesterday")) + "\nÚLTIMOS 7 DIAS: " + (sales==null?0:sales.optInt("week"));
+                org.json.JSONArray tops = r.optJSONArray("topPackages"); StringBuilder topText = new StringBuilder("PACOTES MAIS COMPRADOS (7 DIAS)\n");
+                if(tops!=null) for(int i=0;i<tops.length();i++){org.json.JSONObject t=tops.optJSONObject(i);if(t!=null)topText.append(t.optInt("mb")).append(" MB — ").append(t.optInt("sales")).append(" vendas\n");}
+                org.json.JSONArray salesDays = r.optJSONArray("dailySales");
+                java.util.List<ProfitChartView.Bar> salesBars = new java.util.ArrayList<>();
+                if(salesDays!=null) for(int i=0;i<salesDays.length();i++){org.json.JSONObject d=salesDays.optJSONObject(i);if(d!=null){String day=d.optString("day","");if(day.length()>=5)day=day.substring(5);salesBars.add(new ProfitChartView.Bar(day,(float)d.optInt("sales",0)));}}
+                String g=graf.toString(),hh=h.toString(),vs=vendaResumo,pt=topText.toString();runOnUiThread(()->{
                   financeSummary.setText(resumo);financeChart.setText(g);financeHistory.setText(hh);
+                  salesStats.setText(vs); packageStats.setText(pt);
+                  if(!salesBars.isEmpty()) salesChartView.setData(salesBars);
                   try {
                     org.json.JSONArray chart = r.optJSONArray("chart7");
                     if (chart == null) chart = r.optJSONArray("chart30");
@@ -322,6 +351,29 @@ public class MainActivity extends Activity {
     }
     String valor(org.json.JSONObject o){return o==null?"0":String.format(java.util.Locale.US,"%.2f",o.optDouble("total",0))+" ("+o.optInt("vendas",0)+" vendas)";}
     void guardarLucro(){try{int mb=Integer.parseInt(lucroMb.getText().toString().trim());double mt=Double.parseDouble(lucroMt.getText().toString().trim().replace(',','.'));new Thread(()->{try{org.json.JSONObject b=new org.json.JSONObject();b.put("action","savePackage");b.put("mb",mb);b.put("profitMt",mt);org.json.JSONObject r=VerificationApi.finance(this,b);runOnUiThread(()->{Toast.makeText(this,r.optString("message",r.optBoolean("ok")?"Tabela guardada":"Erro ao guardar"),Toast.LENGTH_LONG).show();if(r.optBoolean("ok"))carregarFinanceiro();});}catch(Exception e){runOnUiThread(()->Toast.makeText(this,"Erro: "+e.getMessage(),Toast.LENGTH_LONG).show());}}).start();}catch(Exception e){Toast.makeText(this,"Indica MB e lucro válidos.",Toast.LENGTH_SHORT).show();}}
+
+    void pesquisarComprovativo() {
+        String ref = receiptSearch == null ? "" : receiptSearch.getText().toString().trim();
+        if (ref.length() < 4) { receiptResult.setText("Introduz uma referência válida (mínimo 4 caracteres)."); return; }
+        receiptResult.setText("A pesquisar na API…");
+        new Thread(() -> {
+            try {
+                org.json.JSONObject body = new org.json.JSONObject(); body.put("action", "searchReceipt"); body.put("reference", ref);
+                org.json.JSONObject result = VerificationApi.finance(this, body);
+                org.json.JSONArray rows = result.optJSONArray("results"); StringBuilder out = new StringBuilder();
+                if (rows == null || rows.length() == 0) out.append("Comprovativo não encontrado.");
+                else for (int i=0;i<rows.length();i++) { org.json.JSONObject x=rows.optJSONObject(i); if(x==null) continue;
+                    out.append("REGISTO ENCONTRADO\nReferência: ").append(x.optString("reference", ref))
+                       .append("\nEstado: ").append(x.optString("status"))
+                       .append("\nValor: ").append(x.optDouble("amount_mt",0)).append(" MT")
+                       .append("\nPedido: ").append(x.optString("order_id"))
+                       .append("\nNúmero: ").append(x.optString("number","—"))
+                       .append("\nPacote: ").append(x.optInt("quantity_mb")).append(" MB\n\n");
+                }
+                String text=out.toString(); runOnUiThread(() -> receiptResult.setText(text));
+            } catch(Exception e) { runOnUiThread(() -> receiptResult.setText("Erro na pesquisa: "+e.getMessage())); }
+        }).start();
+    }
 
     void pedirIgnorarBateriaSePreciso() {
         try {

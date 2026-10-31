@@ -110,7 +110,6 @@ label{font-size:12px;color:var(--mu)}
     <div class="content">
       <!-- INÍCIO -->
       <div class="page on" id="p-inicio">
-        <div class="banner"><h2>Bem-vindo, Gestor!</h2><p>Tudo funcionando perfeitamente ✅</p></div>
         <div class="grid2">
           <div class="tile blue"><div class="lbl">Saldo SIM1</div><div class="val" id="sim1">— MB</div></div>
           <div class="tile pur"><div class="lbl">Saldo SIM2</div><div class="val" id="sim2">— MB</div></div>
@@ -167,8 +166,7 @@ label{font-size:12px;color:var(--mu)}
       <div class="page" id="p-associar">
         <div class="card qr-box">
           <h3 style="text-align:left">Associar Dispositivo</h3>
-          <p class="note">Aponta a câmara do teu celular ou digita o código abaixo.</p>
-          <canvas id="qrCanvas" width="200" height="200"></canvas>
+          <p class="note">Usa o código abaixo para associar o dispositivo ao grupo autorizado.</p>
           <div class="codigo" id="codAssoc">LC-————</div>
           <button class="btn g" onclick="copiarCodigo()">📋 Copiar Código</button>
           <div class="note">✅ Use o mesmo número do WhatsApp<br>✅ Mantenha o bot online</div>
@@ -233,7 +231,7 @@ function go(id){
   });
   closeDrawer();
   if(id==='pedidos') carregarPedidos();
-  if(id==='associar') desenharQR();
+
 }
 function bars(el, data){
   const max=Math.max(1,...data.map(d=>d.v));
@@ -249,28 +247,6 @@ document.getElementById('pedidosHoje').textContent='28';
 
 let codAssoc='LC-'+Date.now().toString().slice(-8);
 document.getElementById('codAssoc').textContent=codAssoc;
-
-function desenharQR(){
-  const c=document.getElementById('qrCanvas'); const ctx=c.getContext('2d');
-  ctx.fillStyle='#fff'; ctx.fillRect(0,0,200,200);
-  // grid pseudo-QR legível + Android pode substituir bitmap real
-  const n=25, cell=200/n;
-  ctx.fillStyle='#000';
-  function finder(ox,oy){
-    for(let y=0;y<7;y++)for(let x=0;x<7;x++){
-      if(x===0||x===6||y===0||y===6||(x>=2&&x<=4&&y>=2&&y<=4)) ctx.fillRect((ox+x)*cell,(oy+y)*cell,cell,cell);
-    }
-  }
-  finder(1,1); finder(n-8,1); finder(1,n-8);
-  // data-ish from code hash
-  let h=0; for(let i=0;i<codAssoc.length;i++) h=(h*31+codAssoc.charCodeAt(i))>>>0;
-  for(let y=9;y<n-9;y++) for(let x=9;x<n-9;x++){
-    h=(h*1103515245+12345)>>>0;
-    if(h&1) ctx.fillRect(x*cell,y*cell,cell,cell);
-  }
-  try{ if(window.Android && Android.qrBitmapBase64){ /* optional */ } }catch(e){}
-}
-desenharQR();
 
 function copiarCodigo(){ try{ Android.copiarTexto(codAssoc); }catch(e){ navigator.clipboard&&navigator.clipboard.writeText(codAssoc); } alert('Código copiado'); }
 function copiarBot(){ const t=document.getElementById('codBot').textContent; try{ Android.copiarTexto(t); }catch(e){} }
@@ -310,14 +286,34 @@ function setPedidos(json){
 function renderPedidos(list){
   const box=document.getElementById('listaPedidos');
   if(!list||!list.length){ box.innerHTML='<div class="note">Sem pedidos.</div>'; return; }
-  box.innerHTML=list.map(p=>{
-    const st=p.estado||p.status||'pendente';
-    let badge='badge run', lab='Em Processamento';
-    if(/conclu|ok|done|completed/i.test(st)){ badge='badge ok'; lab='Concluído'; }
-    if(/cancel|fail|erro/i.test(st)){ badge='badge cancel'; lab='Cancelado'; }
-    if(/pend/i.test(st)){ badge='badge run'; lab='Pendente'; }
-    return `<div class="pedido" data-st="${st}"><div><b>#${p.id||p.orderId||'—'}</b><div class="meta">${p.mb||p.quantidade||''} MB · ${p.quando||p.hora||p.createdAt||''}</div></div><span class="${badge}">${lab}</span></div>`;
-  }).join('');
+  const normDate = p => p.createdAt || p.quando || p.hora || p.paymentDate || '';
+  const today = new Date().toLocaleDateString('en-CA');
+  const yesterdayDate = new Date(Date.now()-86400000).toLocaleDateString('en-CA');
+  const buckets = {today:[], yesterday:[], running:[], done:[], other:[]};
+  list.forEach(p=>{
+    const st=String(p.estado||p.status||'pendente').toLowerCase();
+    const dt=normDate(p).slice(0,10);
+    if(/conclu|ok|done|completed/.test(st)) buckets.done.push(p);
+    else if(/and|process|run|execut/.test(st)) buckets.running.push(p);
+    else if(dt===today) buckets.today.push(p);
+    else if(dt===yesterdayDate) buckets.yesterday.push(p);
+    else buckets.other.push(p);
+  });
+  const card = p => {
+    const st=String(p.estado||p.status||'pendente');
+    let badge='badge run', lab='Pendente';
+    if(/conclu|ok|done|completed/i.test(st)){badge='badge ok';lab='Concluído';}
+    if(/cancel|fail|erro/i.test(st)){badge='badge cancel';lab='Cancelado';}
+    if(/and|process|run|execut/i.test(st)){badge='badge run';lab='Em execução';}
+    const numero=p.numero||p.number||p.destino||'Número não informado';
+    const mb=p.mb||p.quantidadeMB||p.quantity_mb||p.quantidade||'—';
+    const valor=p.valorMT||p.value_mt||p.valor||'—';
+    const data=normDate(p)||'Data não informada';
+    return `<div class="pedido" data-st="${st}"><div style="min-width:0;flex:1"><b>#${p.id||p.pedidoId||p.orderId||'—'}</b><div class="meta">📱 ${numero}</div><div class="meta">📦 ${mb} MB · 💵 ${valor} MT</div><div class="meta">🕒 ${data}</div></div><span class="badge ${badge.replace('badge ','')}">${lab}</span></div>`;
+  };
+  const section=(title,arr)=>arr.length?`<h3 style="margin:14px 2px 8px;color:var(--g);font-size:13px">${title} (${arr.length})</h3>${arr.map(card).join('')}`:'';
+  box.innerHTML=section('Hoje',buckets.today)+section('Ontem',buckets.yesterday)+section('Em execução',buckets.running)+section('Concluídos',buckets.done)+section('Outros dias',buckets.other);
+  if(!box.innerHTML) box.innerHTML='<div class="note">Sem pedidos associados a este dispositivo/grupo.</div>';
 }
 function filtroPed(tipo,btn){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('on'));

@@ -19,6 +19,8 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.PopupMenu;
+import android.view.View;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 /**
@@ -29,6 +31,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 public class MainActivity extends Activity {
     LinearLayout root;
     TextView status;
+    LinearLayout financialSection;
     EditText key;
     EditText mbId;
 
@@ -139,13 +142,24 @@ public class MainActivity extends Activity {
         root.setBackgroundColor(BG);
 
         TextView logo = new TextView(this);
-        logo.setText("LC VERIFICATION");
+        logo.setText("🟢  LACOSTE  |  LC VERIFICATION");
         logo.setTextColor(ACCENT);
         logo.setTextSize(22);
         logo.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
         logo.setLetterSpacing(0.12f);
         logo.setGravity(Gravity.CENTER);
         root.addView(logo);
+
+        Button menu = btn("☰   Menu principal  ·  Financeiro  ·  Histórico  ·  Dispositivos");
+        menu.setOnClickListener(v -> {
+            PopupMenu pm = new PopupMenu(this, menu);
+            pm.getMenu().add("Painel principal").setOnMenuItemClickListener(i -> { scrollToTop(); return true; });
+            pm.getMenu().add("Vendas e lucros").setOnMenuItemClickListener(i -> { if (financialSection != null) financialSection.requestFocus(); return true; });
+            pm.getMenu().add("Associação de dispositivo").setOnMenuItemClickListener(i -> { mbId.requestFocus(); return true; });
+            pm.getMenu().add("Permissões e manter ativo").setOnMenuItemClickListener(i -> { pedirIgnorarBateria(); return true; });
+            pm.show();
+        });
+        root.addView(menu);
 
         TextView sub = new TextView(this);
         sub.setText("Verifica SMS de dinheiro RECEBIDO\n(M-Pesa e E-Mola)");
@@ -163,6 +177,22 @@ public class MainActivity extends Activity {
         status.setTextColor(TEXT);
         sStatus.addView(status);
         root.addView(sStatus);
+
+        financialSection = section("PAINEL FINANCEIRO · SMS RECEBIDOS");
+        financialSection.setFocusableInTouchMode(true);
+        TextView financeSummary = label("A calcular pagamentos registados neste dispositivo…", true);
+        financeSummary.setTextColor(TEXT);
+        financialSection.addView(financeSummary);
+        PaymentTrendView trend = new PaymentTrendView(this, VerificationStore.recentIncoming(this));
+        financialSection.addView(trend, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(190)));
+        Button refreshFinance = btn("Atualizar estatísticas");
+        refreshFinance.setOnClickListener(v -> {
+            trend.setPayments(VerificationStore.recentIncoming(this));
+            financeSummary.setText(financeSummary());
+        });
+        financialSection.addView(refreshFinance);
+        financeSummary.setText(financeSummary());
+        root.addView(financialSection);
 
         LinearLayout sLic = section("LICENÇA");
         key = field("Chave de licença");
@@ -216,6 +246,15 @@ public class MainActivity extends Activity {
         scroll.addView(root);
         setContentView(scroll);
         verificar();
+    }
+
+    void scrollToTop() { if (root != null) root.getParent().requestChildFocus(root, root); }
+
+    String financeSummary() {
+        org.json.JSONArray a = VerificationStore.recentIncoming(this);
+        double total = 0; int count = 0;
+        for (int i = 0; i < a.length(); i++) { org.json.JSONObject o = a.optJSONObject(i); if (o != null) { total += o.optDouble("value", 0); count++; } }
+        return "Pagamentos SMS registados: " + count + "   ·   Total recebido identificado: " + String.format(java.util.Locale.US, "%.2f MT", total);
     }
 
     void pedirIgnorarBateriaSePreciso() {

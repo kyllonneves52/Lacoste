@@ -964,12 +964,11 @@ public class MainActivity extends AppCompatActivity {
         // Actualiza histórico local e puxa fila do servidor
         preencherHistorico();
         ApiClient.buscarPedidos(this, new ApiClient.PedidosCallback() {
-            @Override
+                        @Override
             public void onPedidos(org.json.JSONArray pedidos) {
                 runOnUiThread(() -> {
                     try {
                         if (historicoLista == null) return;
-                        // acrescenta pedidos da API no topo com data/hora
                         java.text.SimpleDateFormat fmt = new java.text.SimpleDateFormat("dd/MM HH:mm:ss", java.util.Locale.getDefault());
                         for (int i = 0; i < pedidos.length(); i++) {
                             org.json.JSONObject p = pedidos.optJSONObject(i);
@@ -977,17 +976,11 @@ public class MainActivity extends AppCompatActivity {
                             String quando = p.optString("created_at", p.optString("criado", p.optString("timestamp", "")));
                             try {
                                 if (quando.length() >= 19) {
-                                    // keep as is or format
-                                } else if (quando.matches("\d+")) {
+                                } else if (quando.matches("\\d+")) {
                                     quando = fmt.format(new java.util.Date(Long.parseLong(quando)));
                                 }
                             } catch (Exception ignored) {}
-                            String linha = "Fila API · " + quando
-                                + "
-" + p.optString("numero", "—") + " — "
-                                + p.optInt("quantidadeMB", p.optInt("mb", 0)) + "MB · "
-                                + p.optString("status", "—")
-                                + " · ref " + p.optString("id", p.optString("pedidoId", ""));
+                            String linha = "Fila API - " + quando + "\n" + p.optString("numero", "-") + " - " + p.optInt("quantidadeMB", p.optInt("mb", 0)) + "MB - " + p.optString("status", "-") + " - ref " + p.optString("id", p.optString("pedidoId", ""));
                             TextView item = text(linha, 13);
                             item.setTextColor(0xFF22C55E);
                             item.setBackground(round(0xFF171F2E, 12));

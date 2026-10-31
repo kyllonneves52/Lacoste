@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>LACOSTE AUTO</title>
+<style>
+:root{--bg:#050a0f;--card:#0c1520;--card2:#121c2a;--g:#22c55e;--g2:#16a34a;--tx:#e8f0f7;--mu:#8b9cb3;--line:#1a2838;--blue:#3b82f6;--pur:#8b5cf6;--or:#f59e0b;--red:#ef4444}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+body{font-family:-apple-system,Roboto,'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
+.app{display:flex;min-height:100vh}
+/* DRAWER */
+.drawer{width:0;overflow:hidden;background:#071018;border-right:1px solid var(--line);transition:width .25s;position:fixed;left:0;top:0;bottom:0;z-index:40;display:flex;flex-direction:column}
+.drawer.open{width:78%;max-width:300px}
+.drawer .brand{padding:20px 16px 12px;display:flex;align-items:center;gap:12px}
+.drawer .croc{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--g),var(--g2));display:flex;align-items:center;justify-content:center;font-size:22px}
+.drawer h1{font-size:16px;font-weight:700}
+.drawer .sub{font-size:11px;color:var(--mu)}
+.gestor{margin:8px 12px;padding:10px 12px;background:var(--card);border-radius:12px;display:flex;align-items:center;gap:10px;border:1px solid var(--line)}
+.gestor .av{width:36px;height:36px;border-radius:50%;background:#1e3a2f;display:flex;align-items:center;justify-content:center}
+.gestor small{color:var(--mu);font-size:11px}
+.nav-item{padding:12px 16px;margin:2px 8px;border-radius:10px;font-size:14px;color:var(--mu);display:flex;align-items:center;gap:10px;cursor:pointer}
+.nav-item.on,.nav-item:active{background:rgba(34,197,94,.15);color:var(--g)}
+.nav-item span.ic{width:22px;text-align:center}
+.drawer .sair{margin:auto 12px 16px;padding:12px;background:var(--g);color:#04120a;border:0;border-radius:12px;font-weight:700;font-size:14px}
+.scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:35}
+.scrim.on{display:block}
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;width:100%}
+.topbar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:#071018;position:sticky;top:0;z-index:20}
+.topbar .menu{background:0;border:0;color:var(--tx);font-size:22px;padding:4px 8px}
+.topbar .title{flex:1;font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px}
+.topbar .bell{background:0;border:0;color:var(--mu);font-size:18px}
+.content{flex:1;overflow-y:auto;padding:12px 14px 80px}
+.page{display:none}.page.on{display:block}
+/* CARDS */
+.banner{background:linear-gradient(135deg,#0d3d24,#0a2818);border:1px solid rgba(34,197,94,.35);border-radius:14px;padding:14px;margin-bottom:12px}
+.banner h2{color:var(--g);font-size:16px;margin-bottom:4px}
+.banner p{color:#9ec9b0;font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;min-height:78px}
+.tile .lbl{font-size:11px;color:var(--mu);margin-bottom:6px}
+.tile .val{font-size:18px;font-weight:700}
+.tile.blue{background:linear-gradient(160deg,#0c1e3a,#0a1528)}.tile.blue .val{color:#60a5fa}
+.tile.pur{background:linear-gradient(160deg,#1a1235,#0f0a20)}.tile.pur .val{color:#a78bfa}
+.tile.green{background:linear-gradient(160deg,#0c2a1c,#081a12)}.tile.green .val{color:var(--g)}
+.tile.or{background:linear-gradient(160deg,#2a1c0c,#1a1208)}.tile.or .val{color:var(--or)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h3{font-size:13px;color:var(--mu);margin-bottom:12px;font-weight:600}
+.chart{height:140px;display:flex;align-items:flex-end;gap:8px;padding:8px 4px 0}
+.chart .bar{flex:1;background:linear-gradient(180deg,var(--g),var(--g2));border-radius:6px 6px 2px 2px;min-height:8px;position:relative}
+.chart .bar span{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--mu);white-space:nowrap}
+.chart .bar em{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--g);font-style:normal}
+.total-row{margin-top:22px;font-size:13px;color:var(--mu)}.total-row b{color:var(--g)}
+.btn{display:block;width:100%;padding:13px;border-radius:12px;border:0;font-size:14px;font-weight:600;margin-top:10px;cursor:pointer}
+.btn.g{background:var(--g);color:#04120a}
+.btn.ghost{background:var(--card2);color:var(--tx);border:1px solid var(--line)}
+.btn.blue{background:#1d4ed8;color:#fff}
+.btn.pur{background:#6d28d9;color:#fff}
+.btn.or{background:#d97706;color:#fff}
+.btn.red{background:#b91c1c;color:#fff}
+/* PEDIDOS */
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px}
+.tabs button{flex-shrink:0;padding:8px 14px;border-radius:20px;border:1px solid var(--line);background:var(--card);color:var(--mu);font-size:12px}
+.tabs button.on{background:rgba(34,197,94,.2);border-color:var(--g);color:var(--g)}
+.pedido{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pedido .meta{font-size:12px;color:var(--mu);margin-top:2px}
+.pedido .badge{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600}
+.badge.ok{background:rgba(34,197,94,.2);color:var(--g)}
+.badge.run{background:rgba(59,130,246,.2);color:#60a5fa}
+.badge.cancel{background:rgba(239,68,68,.2);color:var(--red)}
+/* QR */
+.qr-box{text-align:center;padding:12px}
+.qr-box canvas,.qr-box img{width:200px;height:200px;background:#fff;border-radius:12px;margin:12px auto;display:block}
+.codigo{font-size:20px;font-weight:700;color:var(--g);letter-spacing:1px;margin:8px 0}
+.note{font-size:12px;color:var(--mu);text-align:left;margin-top:10px;line-height:1.5}
+/* LIMITES */
+.stack .btn{margin-top:8px}
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;background:#071018;border-top:1px solid var(--line);display:flex;z-index:30;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+.bnav button{flex:1;background:0;border:0;color:var(--mu);font-size:11px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.bnav button.on{color:var(--g)}
+.bnav button .ic{font-size:18px}
+input,select{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--tx);padding:12px;border-radius:10px;font-size:14px;margin:6px 0 10px}
+label{font-size:12px;color:var(--mu)}
+</style>
+</head>
+<body>
+<div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+<div class="app">
+  <aside class="drawer" id="drawer">
+    <div class="brand"><div class="croc">🐊</div><div><h1>LACOSTE AUTO</h1><div class="sub">Transferência de megas</div></div></div>
+    <div class="gestor"><div class="av">👤</div><div><div id="gestorNome">Gestor Lacoste</div><small id="gestorId">ID: —</small></div></div>
+    <div class="nav-item on" data-page="inicio" onclick="go('inicio')"><span class="ic">🏠</span> Início</div>
+    <div class="nav-item" data-page="painel" onclick="go('painel')"><span class="ic">📊</span> Meu Painel</div>
+    <div class="nav-item" data-page="pedidos" onclick="go('pedidos')"><span class="ic">📦</span> Pedidos</div>
+    <div class="nav-item" data-page="lucros" onclick="go('lucros')"><span class="ic">📈</span> Lucro e Estatísticas</div>
+    <div class="nav-item" data-page="associar" onclick="go('associar')"><span class="ic">🔗</span> Associar Dispositivo</div>
+    <div class="nav-item" data-page="limites" onclick="go('limites')"><span class="ic">⚙️</span> Limites e Consultas</div>
+    <div class="nav-item" data-page="config" onclick="go('config')"><span class="ic">🛠️</span> Configurações</div>
+    <div class="nav-item" data-page="licenca" onclick="go('licenca')"><span class="ic">🛡️</span> Licença</div>
+    <button class="sair" onclick="try{Android.sair()}catch(e){}">Sair</button>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <button class="menu" onclick="openDrawer()">☰</button>
+      <div class="title">🐊 LACOSTE AUTO</div>
+      <button class="bell">🔔</button>
+    </div>
+    <div class="content">
+      <!-- INÍCIO -->
+      <div class="page on" id="p-inicio">
+        <div class="banner"><h2>Bem-vindo, Gestor!</h2><p>Tudo funcionando perfeitamente ✅</p></div>
+        <div class="grid2">
+          <div class="tile blue"><div class="lbl">Saldo SIM1</div><div class="val" id="sim1">— MB</div></div>
+          <div class="tile pur"><div class="lbl">Saldo SIM2</div><div class="val" id="sim2">— MB</div></div>
+          <div class="tile green"><div class="lbl">Pedidos Hoje</div><div class="val" id="pedidosHoje">0</div></div>
+          <div class="tile or"><div class="lbl">Lucro Hoje</div><div class="val" id="lucroHoje">0 MT</div></div>
+        </div>
+        <div class="card">
+          <h3>📈 Seus Lucros (Últimos 7 dias)</h3>
+          <div class="chart" id="chart7"></div>
+          <div class="total-row">Total: <b id="lucro7">0 MT</b></div>
+          <button class="btn g" onclick="go('lucros')">Ver Detalhes</button>
+        </div>
+      </div>
+      <!-- PAINEL -->
+      <div class="page" id="p-painel">
+        <div class="card">
+          <h3>Transferência manual</h3>
+          <label>Quantidade MB</label><input id="mb" type="text" placeholder="Ex: 100"/>
+          <label>Número destino</label><input id="num" type="text" placeholder="Ex: 858098975"/>
+          <button class="btn g" onclick="enviarManual()">Enviar transferência</button>
+        </div>
+        <div class="grid2">
+          <button class="btn ghost" onclick="consultar(1)">Consultar SIM1</button>
+          <button class="btn ghost" onclick="consultar(2)">Consultar SIM2</button>
+        </div>
+      </div>
+      <!-- PEDIDOS -->
+      <div class="page" id="p-pedidos">
+        <div class="tabs">
+          <button class="on" onclick="filtroPed('todos',this)">Todos</button>
+          <button onclick="filtroPed('pendente',this)">Pendentes</button>
+          <button onclick="filtroPed('andamento',this)">Em Andamento</button>
+          <button onclick="filtroPed('concluido',this)">Concluídos</button>
+        </div>
+        <div id="listaPedidos"><div class="pedido"><div><b>A carregar…</b><div class="meta">Toque actualizar</div></div></div></div>
+        <button class="btn ghost" onclick="carregarPedidos()">↻ Actualizar</button>
+      </div>
+      <!-- LUCROS -->
+      <div class="page" id="p-lucros">
+        <div class="card">
+          <h3>Gráfico de Lucros (7 dias)</h3>
+          <div class="chart" id="chart7b"></div>
+          <div class="total-row">Total período: <b id="lucro7b">0 MT</b></div>
+        </div>
+        <div class="card">
+          <h3>Tabela de lucro por pacote</h3>
+          <label>MB</label><input id="lucroMb" placeholder="220"/>
+          <label>Lucro MT</label><input id="lucroMt" placeholder="2"/>
+          <button class="btn g" onclick="guardarLucro()">Guardar na tabela</button>
+          <div id="tabelaLucro" style="margin-top:10px;font-size:13px;color:var(--mu)"></div>
+        </div>
+      </div>
+      <!-- ASSOCIAR -->
+      <div class="page" id="p-associar">
+        <div class="card qr-box">
+          <h3 style="text-align:left">Associar Dispositivo</h3>
+          <p class="note">Aponta a câmara do teu celular ou digita o código abaixo.</p>
+          <canvas id="qrCanvas" width="200" height="200"></canvas>
+          <div class="codigo" id="codAssoc">LC-————</div>
+          <button class="btn g" onclick="copiarCodigo()">📋 Copiar Código</button>
+          <div class="note">✅ Use o mesmo número do WhatsApp<br>✅ Mantenha o bot online</div>
+        </div>
+        <div class="card">
+          <h3>Código de pareamento do bot</h3>
+          <label>Número (258…)</label><input id="numPair" placeholder="25884…"/>
+          <button class="btn ghost" onclick="pedirCodigoBot()">Pedir / actualizar código</button>
+          <div class="codigo" id="codBot">—</div>
+          <button class="btn g" onclick="copiarBot()">📋 Copiar código do bot</button>
+        </div>
+      </div>
+      <!-- LIMITES -->
+      <div class="page" id="p-limites">
+        <div class="card stack">
+          <h3>Limites e Consultas</h3>
+          <button class="btn blue" onclick="nativeCmd('consultar')">📊 Consultar Saldo (MB)</button>
+          <button class="btn g" onclick="nativeCmd('resetar')">🔄 Resetar Limite</button>
+          <button class="btn pur" onclick="nativeCmd('limites')">☰ Ver Limites</button>
+          <button class="btn or" onclick="nativeCmd('libertar')">✈ Liberar Pedidos</button>
+          <div id="cmdStatus" class="note" style="margin-top:12px"></div>
+        </div>
+      </div>
+      <!-- CONFIG -->
+      <div class="page" id="p-config">
+        <div class="card">
+          <h3>Permissões e sistema</h3>
+          <button class="btn ghost" onclick="try{Android.abrirAcessibilidade()}catch(e){}">♿ Acessibilidade</button>
+          <button class="btn ghost" onclick="try{Android.abrirBateria()}catch(e){}">🔋 Não optimizar bateria</button>
+          <button class="btn ghost" onclick="try{Android.iniciarMonitor()}catch(e){}">🚀 Iniciar monitoramento</button>
+          <button class="btn red" onclick="try{Android.pararMonitor()}catch(e){}">■ Parar monitoramento</button>
+        </div>
+      </div>
+      <!-- LICENÇA -->
+      <div class="page" id="p-licenca">
+        <div class="card">
+          <h3>Licença</h3>
+          <div class="val" id="licText" style="color:var(--g);font-size:22px;font-weight:700">—</div>
+          <div class="note" id="androidId">ID: —</div>
+        </div>
+      </div>
+    </div>
+    <nav class="bnav">
+      <button class="on" onclick="go('inicio')"><span class="ic">🏠</span>Início</button>
+      <button onclick="go('pedidos')"><span class="ic">📦</span>Pedidos</button>
+      <button onclick="go('lucros')"><span class="ic">📈</span>Estatísticas</button>
+      <button onclick="go('limites')"><span class="ic">⋯</span>Mais</button>
+    </nav>
+  </div>
+</div>
+<script>
+/* QR minimal: draw modules via API from Android or simple placeholder pattern */
+function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('scrim').classList.add('on')}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('scrim').classList.remove('on')}
+function go(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  const el=document.getElementById('p-'+id); if(el) el.classList.add('on');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('on',n.dataset.page===id));
+  document.querySelectorAll('.bnav button').forEach((b,i)=>{
+    const map=['inicio','pedidos','lucros','limites'];
+    b.classList.toggle('on', map[i]===id || (id==='painel'&&i===0) || (id==='associar'&&i===3) || (id==='config'&&i===3) || (id==='licenca'&&i===3));
+  });
+  closeDrawer();
+  if(id==='pedidos') carregarPedidos();
+  if(id==='associar') desenharQR();
+}
+function bars(el, data){
+  const max=Math.max(1,...data.map(d=>d.v));
+  el.innerHTML=data.map(d=>`<div class="bar" style="height:${Math.max(8,(d.v/max)*110)}px"><em>${d.v}</em><span>${d.l}</span></div>`).join('');
+}
+const sample=[{l:'25',v:12},{l:'26',v:20},{l:'27',v:18},{l:'28',v:25},{l:'29',v:30},{l:'30',v:22},{l:'31',v:42}];
+bars(document.getElementById('chart7'),sample);
+bars(document.getElementById('chart7b'),sample);
+document.getElementById('lucro7').textContent=sample.reduce((a,b)=>a+b.v,0)+' MT';
+document.getElementById('lucro7b').textContent=sample.reduce((a,b)=>a+b.v,0)+' MT';
+document.getElementById('lucroHoje').textContent='42 MT';
+document.getElementById('pedidosHoje').textContent='28';
+
+let codAssoc='LC-'+Date.now().toString().slice(-8);
+document.getElementById('codAssoc').textContent=codAssoc;
+
+function desenharQR(){
+  const c=document.getElementById('qrCanvas'); const ctx=c.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,200,200);
+  // grid pseudo-QR legível + Android pode substituir bitmap real
+  const n=25, cell=200/n;
+  ctx.fillStyle='#000';
+  function finder(ox,oy){
+    for(let y=0;y<7;y++)for(let x=0;x<7;x++){
+      if(x===0||x===6||y===0||y===6||(x>=2&&x<=4&&y>=2&&y<=4)) ctx.fillRect((ox+x)*cell,(oy+y)*cell,cell,cell);
+    }
+  }
+  finder(1,1); finder(n-8,1); finder(1,n-8);
+  // data-ish from code hash
+  let h=0; for(let i=0;i<codAssoc.length;i++) h=(h*31+codAssoc.charCodeAt(i))>>>0;
+  for(let y=9;y<n-9;y++) for(let x=9;x<n-9;x++){
+    h=(h*1103515245+12345)>>>0;
+    if(h&1) ctx.fillRect(x*cell,y*cell,cell,cell);
+  }
+  try{ if(window.Android && Android.qrBitmapBase64){ /* optional */ } }catch(e){}
+}
+desenharQR();
+
+function copiarCodigo(){ try{ Android.copiarTexto(codAssoc); }catch(e){ navigator.clipboard&&navigator.clipboard.writeText(codAssoc); } alert('Código copiado'); }
+function copiarBot(){ const t=document.getElementById('codBot').textContent; try{ Android.copiarTexto(t); }catch(e){} }
+function pedirCodigoBot(){
+  const n=document.getElementById('numPair').value;
+  try{ Android.pedirCodigoBot(n); }catch(e){ document.getElementById('codBot').textContent='Use .conectar no bot'; }
+}
+function setCodigoBot(c){ document.getElementById('codBot').textContent=c||'—'; }
+
+function enviarManual(){
+  const mb=document.getElementById('mb').value, num=document.getElementById('num').value;
+  try{ Android.enviarManual(mb,num); }catch(e){ alert('Bridge: '+mb+' → '+num); }
+}
+function consultar(sim){ try{ Android.consultarSaldo(sim); }catch(e){} }
+function nativeCmd(cmd){
+  document.getElementById('cmdStatus').textContent='Comando enviado! Aguardar resposta…';
+  try{ Android.comandoRemoto(cmd); }catch(e){}
+}
+function guardarLucro(){
+  const mb=document.getElementById('lucroMb').value, mt=document.getElementById('lucroMt').value;
+  try{ Android.guardarLucro(mb,mt); }catch(e){}
+  const t=document.getElementById('tabelaLucro');
+  t.innerHTML += `<div>${mb} MB → ${mt} MT</div>`;
+}
+
+let pedidosCache=[];
+function carregarPedidos(){
+  try{ Android.listarPedidos(); }catch(e){
+    // demo se bridge falhar
+    renderPedidos([{id:'LC2601',mb:1024,estado:'andamento',quando:'31/10 10:12'},{id:'LC2602',mb:650,estado:'concluido',quando:'31/10 09:55'},{id:'LC2603',mb:220,estado:'cancel',quando:'31/10 09:40'}]);
+  }
+}
+function setPedidos(json){
+  try{ pedidosCache=typeof json==='string'?JSON.parse(json):json; }catch(e){ pedidosCache=[]; }
+  renderPedidos(pedidosCache);
+}
+function renderPedidos(list){
+  const box=document.getElementById('listaPedidos');
+  if(!list||!list.length){ box.innerHTML='<div class="note">Sem pedidos.</div>'; return; }
+  box.innerHTML=list.map(p=>{
+    const st=p.estado||p.status||'pendente';
+    let badge='badge run', lab='Em Processamento';
+    if(/conclu|ok|done|completed/i.test(st)){ badge='badge ok'; lab='Concluído'; }
+    if(/cancel|fail|erro/i.test(st)){ badge='badge cancel'; lab='Cancelado'; }
+    if(/pend/i.test(st)){ badge='badge run'; lab='Pendente'; }
+    return `<div class="pedido" data-st="${st}"><div><b>#${p.id||p.orderId||'—'}</b><div class="meta">${p.mb||p.quantidade||''} MB · ${p.quando||p.hora||p.createdAt||''}</div></div><span class="${badge}">${lab}</span></div>`;
+  }).join('');
+}
+function filtroPed(tipo,btn){
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('#listaPedidos .pedido').forEach(el=>{
+    const st=(el.dataset.st||'').toLowerCase();
+    let show=true;
+    if(tipo==='pendente') show=/pend/.test(st);
+    if(tipo==='andamento') show=/and|process|run|pending/.test(st);
+    if(tipo==='concluido') show=/conclu|ok|done|completed/.test(st);
+    el.style.display=show?'flex':'none';
+  });
+}
+
+function setSaldos(s1,s2){ document.getElementById('sim1').textContent=(s1||'—')+' MB'; document.getElementById('sim2').textContent=(s2||'—')+' MB'; }
+function setLicenca(t,id){ document.getElementById('licText').textContent=t||'—'; document.getElementById('androidId').textContent='ID: '+(id||'—'); document.getElementById('gestorId').textContent='ID: '+(id||'—'); }
+function setLucros(hoje, serie){
+  if(hoje!=null) document.getElementById('lucroHoje').textContent=hoje+' MT';
+  if(serie&&serie.length){ bars(document.getElementById('chart7'),serie); bars(document.getElementById('chart7b'),serie);
+    const tot=serie.reduce((a,b)=>a+(b.v||0),0); document.getElementById('lucro7').textContent=tot+' MT'; document.getElementById('lucro7b').textContent=tot+' MT'; }
+}
+// init from Android
+try{ Android.onUiReady&&Android.onUiReady(); }catch(e){}
+</script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+const {sql}=require('../../db');const {json,adminOk}=require('../../common');module.exports=async(req,res)=>{if(!adminOk(req))return json(res,403,{ok:false});try{const q=await sql`SELECT * FROM orders ORDER BY created_at DESC LIMIT 200`;return json(res,200,{ok:true,orders:q.rows})}catch(e){return json(res,500,{ok:false,message:e.message})}};

@@ -1,0 +1,87 @@
+LACOSTE AUTO — SITE + LC VERIFICATION
+
+1) SUBIR O PROJETO
+
+No Termux:
+cd /storage/emulated/0
+rm -rf lacoste_site_backup
+cp -r lacoste_site lacoste_site_backup
+
+Extraia este projeto para /storage/emulated/0/lacoste_site e entre nele:
+cd /storage/emulated/0/lacoste_site
+
+Instale dependências:
+npm install
+
+Publique:
+vercel --prod
+
+2) BANCO
+
+Depois do deploy, execute o setup uma vez:
+curl -X POST "https://SEU-DOMINIO.vercel.app/api/setup" -H "x-admin-password: SUA_SENHA_ADMIN"
+
+A resposta esperada é:
+{"ok":true,...}
+
+3) VARIÁVEIS VERCEL
+
+Mantenha as atuais:
+POSTGRES_URL
+ADMIN_PASSWORD
+LACOSTE_BOT_TOKEN
+FIREBASE_PROJECT_ID
+FIREBASE_CLIENT_EMAIL
+FIREBASE_PRIVATE_KEY
+
+4) LC VERIFICATION NO PAINEL
+
+Abra:
+https://SEU-DOMINIO.vercel.app/admin.html
+
+Na área LC Verification — SMS:
+- Registe o Android/iPhone que receberá os SMS.
+- No Android informe o FCM token.
+- Guarde o verificationToken devolvido.
+- Associe o grupo ao dispositivo LC Verification.
+- Escolha: Desligado, Voda/M-Pesa, E-Mola ou Todos.
+
+5) COMPORTAMENTO
+
+Desligado:
+Bot -> Lacoste Auto -> FCM -> envio MB.
+
+Voda:
+Só SMS Voda/M-Pesa válido libera o pedido.
+
+E-Mola:
+Só SMS E-Mola válido libera o pedido.
+
+Todos:
+Aceita Voda/M-Pesa e E-Mola.
+
+A verificação compara referência e valor do pagamento e só aceita um SMS enquanto a janela de 30 segundos estiver aberta.
+
+6) ROTAS LC VERIFICATION
+
+GET/POST /api/lcverification/config
+POST /api/lcverification/device
+POST /api/lcverification/heartbeat
+GET  /api/lcverification/pending
+POST /api/lcverification/sms
+GET  /api/lcverification/status?pedidoId=ID
+POST /api/lcverification/expire
+
+7) IMPORTANTE
+
+Não coloque FIREBASE_PRIVATE_KEY ou LACOSTE_BOT_TOKEN dentro do APK, do bot ou de mensagens do WhatsApp.
+O verificationToken é credencial do dispositivo LC Verification; trate-o como segredo.
+
+
+ROTAS NOVAS
+POST /api/lcverification/associar
+POST /api/autosistema/verificacao/registar
+POST /api/autosistema/verificacao/pagamento
+
+Dois telemóveis: no mainSMS cola o Android ID do mainMB e clica Salvar.
+O SMS só valida dinheiro RECEBIDO (Recebeste), não comprovativo de envio.

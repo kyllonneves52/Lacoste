@@ -108,7 +108,7 @@ public class Prefs {
     }
 
     public static String getUrlPainel(Context ctx) {
-        return sp(ctx).getString(KEY_URL_PAINEL, "http://fi17.bot-hosting.cloud:25143");
+        return sp(ctx).getString(KEY_URL_PAINEL, "http://fi4.bot-hosting.cloud:25205");
     }
 
     public static String getLicenseRequestId(Context ctx) {

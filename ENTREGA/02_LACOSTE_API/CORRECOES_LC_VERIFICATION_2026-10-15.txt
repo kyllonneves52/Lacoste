@@ -1,0 +1,12 @@
+LACOSTE AUTO / LC VERIFICATION — CORREÇÕES 2026-10-15
+
+1) LC Verification aponta para http://fi4.bot-hosting.cloud:25205 (não para Vercel).
+2) VerificationApi trata respostas JSON e texto simples, incluindo respostas de proxy/servidor que antes causavam: Value Payment of type java.lang.String cannot be converted to JSONObject. A mensagem e o HTTP status ficam visíveis no resultado.
+3) VerificationProcessor deixa de apagar sempre a confirmação pendente após qualquer resposta HTTP; só limpa se a API confirmar status verified ou disser que guardou o SMS para associação posterior.
+4) A janela para casar comprovativo e SMS foi ampliada de 30 segundos para 10 minutos nos fluxos de pedido relevantes. Isso permite que comprovativo e SMS cheguem em ordens diferentes sem expirar quase imediatamente.
+5) A contagem de verificações já confirmadas considera todas as partes de pedidos divididos em blocos de MB, não só um ID pai.
+
+IMPORTANTE: isto é uma correção de código, não prova de que a versão está publicada. Depois de publicar a API e instalar o APK novo, testar primeiro com um pagamento real pequeno e confirmar logs/status. Nunca marcar pagamento como recebido apenas porque o Android mostra true; validar paymentId, valor, provider, status=verified e push enviado.
+
+DEPLOY API: publicar a pasta lacoste_auto_api_hyze_ready na aplicação HyzeCloud que serve lacoste.hyzecloud.app; comando de arranque node server.js (o package.json já define npm start). Confirmar variáveis de ambiente e migrações/schema existentes antes de publicar.
+ANDROID: substituir os ficheiros do projeto LCVerificationAndroid pelos ficheiros incluídos e compilar um APK novo. O ZIP não inclui um APK pré-compilado.

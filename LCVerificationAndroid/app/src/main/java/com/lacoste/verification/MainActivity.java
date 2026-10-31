@@ -13,14 +13,13 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.PopupMenu;
-import android.view.View;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 /**
@@ -31,9 +30,15 @@ import com.google.firebase.messaging.FirebaseMessaging;
 public class MainActivity extends Activity {
     LinearLayout root;
     TextView status;
-    LinearLayout financialSection;
     EditText key;
     EditText mbId;
+    EditText lucroMb;
+    EditText lucroMt;
+    TextView financeSummary;
+    TextView financeChart;
+    TextView financeHistory;
+    LinearLayout financeSection;
+    ProfitChartView profitChartView;
 
     static final int BG = Color.parseColor("#05070D");
     static final int CARD = Color.parseColor("#0A1220");
@@ -141,25 +146,32 @@ public class MainActivity extends Activity {
         root.setPadding(dp(16), dp(20), dp(16), dp(28));
         root.setBackgroundColor(BG);
 
+        // Barra superior com menu lateral (três barras), sem importar código do Aurum.
+        LinearLayout topBar = new LinearLayout(this);
+        topBar.setOrientation(LinearLayout.HORIZONTAL);
+        topBar.setGravity(Gravity.CENTER_VERTICAL);
+        topBar.setPadding(0, 0, 0, dp(10));
+        Button menuBtn = btn("☰");
+        LinearLayout.LayoutParams menuLp = new LinearLayout.LayoutParams(dp(56), dp(48));
+        menuBtn.setLayoutParams(menuLp);
+        TextView topTitle = new TextView(this);
+        topTitle.setText("LC Verification");
+        topTitle.setTextColor(TEXT);
+        topTitle.setTextSize(17);
+        topTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        topTitle.setPadding(dp(12), 0, 0, 0);
+        topBar.addView(menuBtn);
+        topBar.addView(topTitle);
+        root.addView(topBar);
+
         TextView logo = new TextView(this);
-        logo.setText("🟢  LACOSTE  |  LC VERIFICATION");
+        logo.setText("LC VERIFICATION");
         logo.setTextColor(ACCENT);
         logo.setTextSize(22);
         logo.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
         logo.setLetterSpacing(0.12f);
         logo.setGravity(Gravity.CENTER);
         root.addView(logo);
-
-        Button menu = btn("☰   Menu principal  ·  Financeiro  ·  Histórico  ·  Dispositivos");
-        menu.setOnClickListener(v -> {
-            PopupMenu pm = new PopupMenu(this, menu);
-            pm.getMenu().add("Painel principal").setOnMenuItemClickListener(i -> { scrollToTop(); return true; });
-            pm.getMenu().add("Vendas e lucros").setOnMenuItemClickListener(i -> { if (financialSection != null) financialSection.requestFocus(); return true; });
-            pm.getMenu().add("Associação de dispositivo").setOnMenuItemClickListener(i -> { mbId.requestFocus(); return true; });
-            pm.getMenu().add("Permissões e manter ativo").setOnMenuItemClickListener(i -> { pedirIgnorarBateria(); return true; });
-            pm.show();
-        });
-        root.addView(menu);
 
         TextView sub = new TextView(this);
         sub.setText("Verifica SMS de dinheiro RECEBIDO\n(M-Pesa e E-Mola)");
@@ -178,22 +190,6 @@ public class MainActivity extends Activity {
         sStatus.addView(status);
         root.addView(sStatus);
 
-        financialSection = section("PAINEL FINANCEIRO · SMS RECEBIDOS");
-        financialSection.setFocusableInTouchMode(true);
-        TextView financeSummary = label("A calcular pagamentos registados neste dispositivo…", true);
-        financeSummary.setTextColor(TEXT);
-        financialSection.addView(financeSummary);
-        PaymentTrendView trend = new PaymentTrendView(this, VerificationStore.recentIncoming(this));
-        financialSection.addView(trend, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(190)));
-        Button refreshFinance = btn("Atualizar estatísticas");
-        refreshFinance.setOnClickListener(v -> {
-            trend.setPayments(VerificationStore.recentIncoming(this));
-            financeSummary.setText(financeSummary());
-        });
-        financialSection.addView(refreshFinance);
-        financeSummary.setText(financeSummary());
-        root.addView(financialSection);
-
         LinearLayout sLic = section("LICENÇA");
         key = field("Chave de licença");
         sLic.addView(key);
@@ -209,6 +205,24 @@ public class MainActivity extends Activity {
         Button bAssoc = btn("Salvar e associar ao mainMB");
         sMb.addView(bAssoc);
         root.addView(sMb);
+
+        financeSection = section("PAINEL FINANCEIRO");
+        financeSection.addView(label("Lucro calculado apenas após a transferência ser confirmada pelo Lacoste Auto.", false));
+        financeSummary = label("A carregar estatísticas...", false); financeSummary.setTextColor(TEXT); financeSection.addView(financeSummary);
+        financeChart = label("Gráfico dos últimos 30 dias", false); financeChart.setTextColor(ACCENT); financeSection.addView(financeChart);
+        profitChartView = new ProfitChartView(this);
+        LinearLayout.LayoutParams cpl = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(180));
+        profitChartView.setLayoutParams(cpl);
+        financeSection.addView(profitChartView);
+        Button refreshFinance = btn("↻ Atualizar estatísticas"); financeSection.addView(refreshFinance);
+        financeSection.addView(label("TABELA DE LUCRO POR PACOTE", true));
+        lucroMb = field("Quantidade de MB (ex.: 220)"); financeSection.addView(lucroMb);
+        lucroMt = field("Lucro em MT (ex.: 2,00)"); financeSection.addView(lucroMt);
+        Button saveProfit = btn("Guardar / atualizar pacote"); financeSection.addView(saveProfit);
+        financeHistory = label("Histórico de vendas concluídas", false); financeHistory.setTextColor(TEXT); financeSection.addView(financeHistory);
+        root.addView(financeSection);
+        refreshFinance.setOnClickListener(v -> carregarFinanceiro());
+        saveProfit.setOnClickListener(v -> guardarLucro());
 
         LinearLayout sPerm = section("PERMISSÕES E MANTER ATIVO");
         Button bSms = btn("Permitir SMS e notificações");
@@ -229,6 +243,19 @@ public class MainActivity extends Activity {
         foot.setPadding(0, dp(8), 0, 0);
         root.addView(foot);
 
+        menuBtn.setOnClickListener(v -> {
+            final String[] opcoes = {"Início", "Estado", "Licença", "Associação mainMB", "Painel financeiro", "Permissões e manter ativo"};
+            final int[] indices = {1, 3, 4, 5, root.indexOfChild(financeSection), root.indexOfChild(sPerm)};
+            new AlertDialog.Builder(this)
+                    .setTitle("LC Verification — Menu")
+                    .setItems(opcoes, (dialog, which) -> {
+                        View alvo = root.getChildAt(indices[which]);
+                        if (alvo != null) scroll.smoothScrollTo(0, alvo.getTop());
+                    })
+                    .setNegativeButton("Fechar", null)
+                    .show();
+        });
+
         bAtivar.setOnClickListener(v -> ativar());
         bAssoc.setOnClickListener(v -> associar());
         bSms.setOnClickListener(v -> pedir());
@@ -246,16 +273,55 @@ public class MainActivity extends Activity {
         scroll.addView(root);
         setContentView(scroll);
         verificar();
+        carregarFinanceiro();
     }
 
-    void scrollToTop() { if (root != null) root.getParent().requestChildFocus(root, root); }
-
-    String financeSummary() {
-        org.json.JSONArray a = VerificationStore.recentIncoming(this);
-        double total = 0; int count = 0;
-        for (int i = 0; i < a.length(); i++) { org.json.JSONObject o = a.optJSONObject(i); if (o != null) { total += o.optDouble("value", 0); count++; } }
-        return "Pagamentos SMS registados: " + count + "   ·   Total recebido identificado: " + String.format(java.util.Locale.US, "%.2f MT", total);
+    void carregarFinanceiro() {
+        financeSummary.setText("A sincronizar com a API...");
+        new Thread(() -> {
+            try {
+                org.json.JSONObject b = new org.json.JSONObject(); b.put("action", "dashboard");
+                org.json.JSONObject r = VerificationApi.finance(this, b);
+                if (!r.optBoolean("ok")) throw new Exception(r.optString("message", "Falha financeira"));
+                org.json.JSONObject sm = r.optJSONObject("summary");
+                org.json.JSONObject hoje = sm == null ? new org.json.JSONObject() : sm.optJSONObject("today");
+                org.json.JSONObject semana = sm == null ? new org.json.JSONObject() : sm.optJSONObject("week");
+                org.json.JSONObject mes = sm == null ? new org.json.JSONObject() : sm.optJSONObject("month");
+                org.json.JSONObject total = sm == null ? new org.json.JSONObject() : sm.optJSONObject("total");
+                String resumo = "HOJE: " + valor(hoje) + " MT\n7 DIAS: " + valor(semana) + " MT\nESTE MÊS: " + valor(mes) + " MT\nACUMULADO: " + valor(total) + " MT";
+                org.json.JSONArray dias = r.optJSONArray("days"); StringBuilder graf = new StringBuilder("GRÁFICO — ÚLTIMOS 30 DIAS\n");
+                if (dias != null) for (int i=0;i<dias.length();i++){org.json.JSONObject d=dias.optJSONObject(i);if(d!=null){double v=d.optDouble("lucro",0);int n=(int)Math.min(18,Math.round(v));graf.append(d.optString("dia")).append("  "); for(int z=0;z<Math.max(0,n);z++) graf.append("▮"); graf.append(" ").append(v).append(" MT\n");}}
+                org.json.JSONArray packs=r.optJSONArray("packages"); StringBuilder h=new StringBuilder("TABELA DE LUCRO CONFIGURADA\n");
+                if(packs!=null)for(int i=0;i<packs.length();i++){org.json.JSONObject p=packs.optJSONObject(i);if(p!=null)h.append(p.optInt("mb")).append(" MB = ").append(p.optDouble("profit_mt",0)).append(" MT\n");}
+                h.append("\nHISTÓRICO RECENTE\n");
+                org.json.JSONArray hist=r.optJSONArray("history");
+                if(hist!=null)for(int i=0;i<Math.min(hist.length(),15);i++){org.json.JSONObject x=hist.optJSONObject(i);if(x!=null)h.append(x.optString("completed_at")).append(" | ").append(x.optInt("mb")).append(" MB | +").append(x.optDouble("profit_mt",0)).append(" MT\n");}
+                String g=graf.toString(),hh=h.toString();runOnUiThread(()->{
+                  financeSummary.setText(resumo);financeChart.setText(g);financeHistory.setText(hh);
+                  try {
+                    org.json.JSONArray chart = r.optJSONArray("chart7");
+                    if (chart == null) chart = r.optJSONArray("chart30");
+                    java.util.List<ProfitChartView.Bar> bars = new java.util.ArrayList<>();
+                    if (chart != null) {
+                      for (int i=0;i<chart.length();i++) {
+                        org.json.JSONObject c = chart.getJSONObject(i);
+                        String day = c.optString("day", "");
+                        if (day.length()>=5) day = day.substring(day.length()-5);
+                        bars.add(new ProfitChartView.Bar(day, (float)c.optDouble("total",0)));
+                      }
+                    }
+                    if (profitChartView != null) {
+                      profitChartView.setTitle("Lucros (MT)");
+                      if (bars.isEmpty()) profitChartView.setSampleWeek();
+                      else profitChartView.setData(bars);
+                    }
+                  } catch (Exception ignored) {}
+                });
+            } catch(Exception e){runOnUiThread(()->financeSummary.setText("Painel indisponível: "+e.getMessage()));}
+        }).start();
     }
+    String valor(org.json.JSONObject o){return o==null?"0":String.format(java.util.Locale.US,"%.2f",o.optDouble("total",0))+" ("+o.optInt("vendas",0)+" vendas)";}
+    void guardarLucro(){try{int mb=Integer.parseInt(lucroMb.getText().toString().trim());double mt=Double.parseDouble(lucroMt.getText().toString().trim().replace(',','.'));new Thread(()->{try{org.json.JSONObject b=new org.json.JSONObject();b.put("action","savePackage");b.put("mb",mb);b.put("profitMt",mt);org.json.JSONObject r=VerificationApi.finance(this,b);runOnUiThread(()->{Toast.makeText(this,r.optString("message",r.optBoolean("ok")?"Tabela guardada":"Erro ao guardar"),Toast.LENGTH_LONG).show();if(r.optBoolean("ok"))carregarFinanceiro();});}catch(Exception e){runOnUiThread(()->Toast.makeText(this,"Erro: "+e.getMessage(),Toast.LENGTH_LONG).show());}}).start();}catch(Exception e){Toast.makeText(this,"Indica MB e lucro válidos.",Toast.LENGTH_SHORT).show();}}
 
     void pedirIgnorarBateriaSePreciso() {
         try {

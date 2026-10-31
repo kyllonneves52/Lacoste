@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "417979947808",
+    "project_id": "lacoste-auto",
+    "storage_bucket": "lacoste-auto.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:417979947808:android:9178109ced005284555545",
+        "android_client_info": {
+          "package_name": "com.lacoste.auto"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-IAivEo9YbFLv9kS1xCz7NORYWjUweyU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

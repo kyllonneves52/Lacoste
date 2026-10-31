@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 import org.json.JSONObject;
 
 public final class VerificationApi {
-    private static final String BASE = "http://fi17.bot-hosting.cloud:25143";
+    private static final String BASE = "http://fi4.bot-hosting.cloud:25205";
     private VerificationApi() {}
 
     static JSONObject req(String path, String method, JSONObject body, String token, String deviceId) throws Exception {
@@ -88,7 +88,9 @@ public final class VerificationApi {
         b.put("androidId", VerificationStore.deviceId(c));
         b.put("fcmToken", fcm == null ? "" : fcm);
         b.put("deviceRole", "verification");
-        return req("/api/autosistema/verificacao/registar", "POST", b, VerificationStore.token(c), VerificationStore.deviceId(c));
+        JSONObject r = req("/api/autosistema/verificacao/registar", "POST", b, VerificationStore.token(c), VerificationStore.deviceId(c));
+        if (r.optBoolean("ok") && !r.optString("verificationToken").isEmpty()) VerificationStore.setToken(c, r.optString("verificationToken"));
+        return r;
     }
 
     public static JSONObject associarMb(Context c, String mbAndroidId, String fcm) throws Exception {
@@ -98,6 +100,14 @@ public final class VerificationApi {
         b.put("fcmToken", fcm == null ? "" : fcm);
         b.put("token", VerificationStore.token(c));
         return req("/api/lcverification/associar", "POST", b, VerificationStore.token(c), VerificationStore.deviceId(c));
+    }
+
+
+    public static JSONObject finance(Context c, JSONObject body) throws Exception {
+        if (body == null) body = new JSONObject();
+        body.put("deviceId", VerificationStore.deviceId(c));
+        body.put("token", VerificationStore.token(c));
+        return req("/api/lcverification/finance", "POST", body, VerificationStore.token(c), VerificationStore.deviceId(c));
     }
 
     public static JSONObject verifySms(Context c, String text, String sender, String paymentId, double amount, String provider) throws Exception {

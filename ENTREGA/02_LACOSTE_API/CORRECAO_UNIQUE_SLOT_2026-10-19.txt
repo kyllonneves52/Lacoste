@@ -1,0 +1,28 @@
+CORREÇÃO UNIQUE constraint failed: devices.license_key, devices.slot
+Data: 2026-10-19
+
+Problema:
+Ao enviar pedido de licença (POST /licenca/request) com um android_id que já existia
+no banco (com slot preenchido de um aluguel anterior), o UPSERT atualizava license_key
+mas mantinha o slot antigo. Se a nova chave já tivesse outro device com o mesmo slot,
+o índice UNIQUE(license_key, slot) falhava.
+
+Correções:
+1) lib/routes/licenca/request.js
+   - No INSERT/ON CONFLICT do devices, agora força slot=NULL, token=NULL,
+     device_token=NULL, license_expires_at=NULL ao colocar em status='pending'.
+   - nextSlot() passou a usar o mesmo limite MAX_DISPOSITIVOS_POR_ALUGUEL (20)
+     em vez de só 1..2.
+
+2) lib/migrate.js
+   - DROP + CREATE do índice parcial:
+     CREATE UNIQUE INDEX idx_devices_license_slot ON devices(license_key, slot)
+     WHERE slot IS NOT NULL
+   - Assim vários devices pending (slot NULL) não conflitam.
+
+Após deploy:
+1. Deploy do código
+2. Chamar /api/init?key=... (ou o endpoint de setup/migrate) para recriar o índice
+3. Testar de novo o pedido de licença no app
+
+O pedido deve voltar com status pending sem erro SQLite.

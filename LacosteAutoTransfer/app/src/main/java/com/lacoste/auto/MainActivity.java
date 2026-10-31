@@ -26,6 +26,11 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.webkit.WebView;
+import android.webkit.WebSettings;
+import android.webkit.WebChromeClient;
+import android.webkit.WebViewClient;
+import android.widget.ImageView;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import com.lacoste.auto.PollingService;
@@ -56,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     private Button navInicio;
     private Button navHistorico;
     private Button navPerfil;
+    private WebView webUi;
     private final Handler licenseHandler = new Handler(Looper.getMainLooper());
     private final Runnable licenseCheckRunnable = new Runnable() {
         @Override public void run() {
@@ -198,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
         ApiClient.sincronizarFcmAgora(getApplicationContext());
 
         calcularEscala();
-        construirInterfaceNativa();
+        construirInterfaceNativa(); // menu nativo original (sem index WebView)
         atualizarQuadroRestantes();
         iniciarMonitorService();
         licenseHandler.post(licenseCheckRunnable);
@@ -269,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
         titulo.setTextColor(0xFFF1F5F9);
         titulo.setPadding(0, 0, 0, 0);
         titles.addView(titulo);
-        TextView subtitulo = text("Automação de transferência de megas", 12);
+        TextView subtitulo = text("Transferência de megas · online", 12);
         subtitulo.setTextColor(0xFF94A3B8);
         subtitulo.setPadding(0, 0, 0, 0);
         subtitulo.setSingleLine(true);
@@ -298,8 +304,8 @@ public class MainActivity extends AppCompatActivity {
         nav.setPadding(dp(8), dp(6), dp(8), dp(8));
         nav.setBackgroundColor(0xFF10192A);
         navInicio = navButton("Início");
-        navHistorico = navButton("Histórico");
-        navPerfil = navButton("Perfil");
+        navHistorico = navButton("Pedidos");
+        navPerfil = navButton("Mais");
         navInicio.setOnClickListener(v -> mostrarPagina(0));
         navHistorico.setOnClickListener(v -> mostrarPagina(1));
         navPerfil.setOnClickListener(v -> mostrarPagina(2));
@@ -414,6 +420,17 @@ public class MainActivity extends AppCompatActivity {
 
     private LinearLayout construirInicio() {
         LinearLayout content = page();
+        // Banner estilo painel (foto)
+        LinearLayout banner = card("");
+        TextView bv = text("Bem-vindo, Gestor!", 15);
+        bv.setTextColor(0xFF22C55E);
+        banner.addView(bv);
+        TextView ok = text("Tudo funcionando · API fi4 · monitor activo", 12);
+        ok.setTextColor(0xFF94A3B8);
+        banner.addView(ok);
+        content.addView(banner);
+
+
         content.setPadding(dp(16), dp(8), dp(16), dp(26));
 
         // 1 — SALDO E TRANSFERÊNCIAS (compacto como a referência)
@@ -651,10 +668,17 @@ public class MainActivity extends AppCompatActivity {
 
     private LinearLayout construirHistorico() {
         LinearLayout content = page();
-        content.addView(text("Últimas transferências", 16));
-        TextView dica = text("Concluídas e canceladas neste telemóvel.", 12);
+        content.addView(text("Pedidos", 16));
+        TextView dica = text("Servidor + histórico local · data e hora em cada item.", 12);
         dica.setTextColor(0xFF94A3B8);
         content.addView(dica);
+        Button refresh = button("↻ Actualizar pedidos da API");
+        refresh.setOnClickListener(v -> {
+            Toast.makeText(this, "A carregar pedidos...", Toast.LENGTH_SHORT).show();
+            listarPedidosNaWeb();
+            preencherHistorico();
+        });
+        content.addView(refresh);
         historicoLista = new LinearLayout(this);
         historicoLista.setOrientation(LinearLayout.VERTICAL);
         content.addView(historicoLista);
@@ -679,7 +703,8 @@ public class MainActivity extends AppCompatActivity {
             boolean ok = "ok".equals(p[1]);
             String quando = p[0];
             try { quando = fmt.format(new java.util.Date(Long.parseLong(p[0]))); } catch (Exception ignored) {}
-            TextView item = text((ok ? "Concluída" : "Cancelada") + " · " + quando + "\n" + p[2] + " — " + p[3], 13);
+            String estado = ok ? "✅ Concluído" : "🛑 Cancelado";
+            TextView item = text(estado + "  ·  " + quando + "\n" + p[2] + " — " + p[3], 13);
             item.setTextColor(ok ? 0xFF22C55E : 0xFFEF4444);
             item.setBackground(round(0xFF171F2E, 12));
             item.setPadding(dp(12), dp(10), dp(12), dp(10));
@@ -706,7 +731,94 @@ public class MainActivity extends AppCompatActivity {
         TextView modelo = text(Build.MANUFACTURER + " " + Build.MODEL, 12);
         modelo.setTextColor(0xFF94A3B8);
         box.addView(modelo);
+        
         content.addView(box);
+
+        // Associar dispositivo — QR + código
+        LinearLayout assoc = card("Associar dispositivo (QR + código)");
+        TextView assocDica = text("Aponta a câmara ou digita o código no WhatsApp / bot. O mesmo código serve para pareamento.", 12);
+        assocDica.setTextColor(0xFF94A3B8);
+        assoc.addView(assocDica);
+        String aid = ApiClient.obterAndroidId(this);
+        String codigoAssoc = "LC-" + (aid.length() > 6 ? aid.substring(aid.length() - 6) : aid).toUpperCase() + "-" + String.valueOf(System.currentTimeMillis() % 10000);
+        ImageView qrImg = new ImageView(this);
+        int qrSize = dp(200);
+        try {
+            android.graphics.Bitmap qrBmp = QrHelper.encode("LACOSTE|" + aid + "|" + codigoAssoc, qrSize);
+            qrImg.setImageBitmap(qrBmp);
+        } catch (Exception e) {
+            qrImg.setBackgroundColor(0xFFFFFFFF);
+        }
+        LinearLayout.LayoutParams qlp = new LinearLayout.LayoutParams(qrSize, qrSize);
+        qlp.gravity = Gravity.CENTER_HORIZONTAL;
+        qlp.topMargin = dp(8);
+        qlp.bottomMargin = dp(8);
+        qrImg.setLayoutParams(qlp);
+        assoc.addView(qrImg);
+        TextView codTv = text(codigoAssoc, 16);
+        codTv.setTextColor(0xFF22C55E);
+        codTv.setGravity(Gravity.CENTER);
+        assoc.addView(codTv);
+        Button copiarCod = button("📋 Copiar código");
+        final String codFinal = codigoAssoc;
+        copiarCod.setOnClickListener(v -> copiarParaClipboard(codFinal));
+        assoc.addView(copiarCod);
+        content.addView(assoc);
+
+        // ---- Código de pareamento pedido PELO APP (bot gera e devolve) ----
+        LinearLayout pair = card("Código do bot (pedir no app)");
+        TextView dicaPair = text("Escreve o número 258… e pede o código. O bot gera o código real e aparece aqui para copiares.", 12);
+        dicaPair.setTextColor(0xFF94A3B8);
+        pair.addView(dicaPair);
+        final EditText inputNum = input("Número WhatsApp (25884...)");
+        inputNum.setInputType(InputType.TYPE_CLASS_PHONE);
+        pair.addView(inputNum);
+        final TextView codigoView = text("Código: —", 16);
+        codigoView.setTextColor(0xFF22C55E);
+        codigoView.setPadding(dp(8), dp(10), dp(8), dp(10));
+        pair.addView(codigoView);
+        Button btnPedir = button("📲 Pedir código ao bot");
+        Button btnCopiar = button("📋 Copiar código");
+        final String[] ultimoCodigo = { "" };
+        btnPedir.setOnClickListener(v -> {
+            String n = inputNum.getText().toString().replaceAll("\\D", "");
+            if (!n.isEmpty() && !n.startsWith("258") && n.length() >= 9) n = "258" + n;
+            if (n.length() < 11) {
+                Toast.makeText(this, "Número inválido (use 258...)", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            codigoView.setText("A pedir ao bot…");
+            final String numFinal = n;
+            pedirCodigoBotDaWeb(numFinal);
+            // actualizar label quando o diálogo/consulta devolver (poll)
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                ApiClient.consultarCodigoPareamento(this, numFinal, new ApiClient.PairingCallback() {
+                    @Override public void onCodigo(String codigo, String numero, String sessao) {
+                        runOnUiThread(() -> {
+                            ultimoCodigo[0] = codigo;
+                            codigoView.setText("Código: " + codigo);
+                        });
+                    }
+                    @Override public void onAguardando(String mensagem) {
+                        runOnUiThread(() -> codigoView.setText(mensagem));
+                    }
+                    @Override public void onErro(String mensagem) {
+                        runOnUiThread(() -> codigoView.setText("Erro: " + mensagem));
+                    }
+                });
+            }, 5000);
+        });
+        btnCopiar.setOnClickListener(v -> {
+            if (ultimoCodigo[0] == null || ultimoCodigo[0].isEmpty()) {
+                Toast.makeText(this, "Ainda não há código", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            copiarParaClipboard(ultimoCodigo[0]);
+        });
+        pair.addView(btnPedir);
+        pair.addView(btnCopiar);
+        content.addView(pair);
+
         return content;
     }
 
@@ -964,11 +1076,12 @@ public class MainActivity extends AppCompatActivity {
         // Actualiza histórico local e puxa fila do servidor
         preencherHistorico();
         ApiClient.buscarPedidos(this, new ApiClient.PedidosCallback() {
-                        @Override
+            @Override
             public void onPedidos(org.json.JSONArray pedidos) {
                 runOnUiThread(() -> {
                     try {
                         if (historicoLista == null) return;
+                        // acrescenta pedidos da API no topo com data/hora
                         java.text.SimpleDateFormat fmt = new java.text.SimpleDateFormat("dd/MM HH:mm:ss", java.util.Locale.getDefault());
                         for (int i = 0; i < pedidos.length(); i++) {
                             org.json.JSONObject p = pedidos.optJSONObject(i);
@@ -976,11 +1089,16 @@ public class MainActivity extends AppCompatActivity {
                             String quando = p.optString("created_at", p.optString("criado", p.optString("timestamp", "")));
                             try {
                                 if (quando.length() >= 19) {
+                                    // keep as is or format
                                 } else if (quando.matches("\\d+")) {
                                     quando = fmt.format(new java.util.Date(Long.parseLong(quando)));
                                 }
                             } catch (Exception ignored) {}
-                            String linha = "Fila API - " + quando + "\n" + p.optString("numero", "-") + " - " + p.optInt("quantidadeMB", p.optInt("mb", 0)) + "MB - " + p.optString("status", "-") + " - ref " + p.optString("id", p.optString("pedidoId", ""));
+                            String linha = "Fila API · " + quando
+                                + "\n" + p.optString("numero", "—") + " — "
+                                + p.optInt("quantidadeMB", p.optInt("mb", 0)) + "MB · "
+                                + p.optString("status", "—")
+                                + " · ref " + p.optString("id", p.optString("pedidoId", ""));
                             TextView item = text(linha, 13);
                             item.setTextColor(0xFF22C55E);
                             item.setBackground(round(0xFF171F2E, 12));
@@ -991,6 +1109,9 @@ public class MainActivity extends AppCompatActivity {
                             historicoLista.addView(item, 0);
                         }
                         Toast.makeText(MainActivity.this, "Pedidos: " + pedidos.length(), Toast.LENGTH_SHORT).show();
+                        if (webUi != null) {
+                            webUi.evaluateJavascript("setPedidos(" + pedidos.toString() + ");", null);
+                        }
                     } catch (Exception e) {
                         Toast.makeText(MainActivity.this, "Erro UI pedidos: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
@@ -1062,4 +1183,106 @@ public class MainActivity extends AppCompatActivity {
         licenseHandler.removeCallbacks(licenseCheckRunnable);
         super.onDestroy();
     }
+
+    private void abrirInterfaceWeb() {
+        webUi = new WebView(this);
+        webUi.setBackgroundColor(0xFF050A0F);
+        WebSettings s = webUi.getSettings();
+        s.setJavaScriptEnabled(true);
+        s.setDomStorageEnabled(true);
+        s.setAllowFileAccess(true);
+        s.setMediaPlaybackRequiresUserGesture(false);
+        webUi.setWebChromeClient(new WebChromeClient());
+        webUi.setWebViewClient(new WebViewClient());
+        webUi.addJavascriptInterface(new WebAppInterface(this), "Android");
+        webUi.loadUrl("file:///android_asset/index.html");
+        setContentView(webUi);
+    }
+
+    public void actualizarWebUi() {
+        if (webUi == null) return;
+        String aid = ApiClient.obterAndroidId(this);
+        String lic = LicenseManager.tempoRestante(this);
+        String js = "setLicenca(" + jsonStr(lic) + "," + jsonStr(aid) + ");";
+        webUi.evaluateJavascript(js, null);
+        // saldos placeholder until consult
+        webUi.evaluateJavascript("setSaldos('—','—');", null);
+    }
+
+    private static String jsonStr(String v) {
+        if (v == null) return "''";
+        return "'" + v.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ") + "'";
+    }
+
+    public void enviarManualDaWeb(String mb, String numero) {
+        try {
+            Toast.makeText(this, "Envio manual: " + mb + "MB → " + numero, Toast.LENGTH_SHORT).show();
+            // reutiliza fluxo nativo se existir
+        } catch (Exception e) {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void executarComandoDaWeb(String cmd) {
+        Toast.makeText(this, "Comando: " + cmd + " (via app)", Toast.LENGTH_SHORT).show();
+        if ("consultar".equals(cmd)) {
+            consultarSaldoSim(1);
+            consultarSaldoSim(2);
+        } else if ("resetar".equals(cmd)) {
+            Prefs.resetarTransferencias(this, 1);
+            Prefs.resetarTransferencias(this, 2);
+            Toast.makeText(this, "Limites do dia resetados", Toast.LENGTH_SHORT).show();
+        } else if ("limites".equals(cmd)) {
+            int r1 = Prefs.getTransferenciasRestantes(this, 1);
+            int r2 = Prefs.getTransferenciasRestantes(this, 2);
+            Toast.makeText(this, "SIM1: " + r1 + " | SIM2: " + r2, Toast.LENGTH_LONG).show();
+        } else if ("libertar".equals(cmd)) {
+            listarPedidosNaWeb();
+            Toast.makeText(this, "A libertar / actualizar pedidos", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void pedirCodigoBotDaWeb(String numero) {
+        final String num = numero == null ? "" : numero.replaceAll("\D", "");
+        Toast.makeText(this, "A pedir código ao bot…", Toast.LENGTH_SHORT).show();
+        // 1) Regista pedido na API (app → bot)
+        ApiClient.pedirCodigoPareamento(this, num, new ApiClient.PairingCallback() {
+            @Override public void onCodigo(String codigo, String n, String sessao) {
+                runOnUiThread(() -> {
+                    if (webUi != null) webUi.evaluateJavascript("setCodigoBot(" + jsonStr(codigo) + ");", null);
+                    mostrarCodigoBotNaWeb(codigo);
+                    Toast.makeText(MainActivity.this, "Código pronto", Toast.LENGTH_SHORT).show();
+                });
+            }
+            @Override public void onAguardando(String mensagem) {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, mensagem + " (bot a gerar…)", Toast.LENGTH_LONG).show());
+                // 2) Consulta várias vezes enquanto o bot processa a fila
+                for (int i = 1; i <= 6; i++) {
+                    final int attempt = i;
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        ApiClient.consultarCodigoPareamento(MainActivity.this, num, new ApiClient.PairingCallback() {
+                            @Override public void onCodigo(String codigo, String n, String sessao) {
+                                runOnUiThread(() -> {
+                                    mostrarCodigoBotNaWeb(codigo);
+                                    Toast.makeText(MainActivity.this, "Código pronto", Toast.LENGTH_SHORT).show();
+                                });
+                            }
+                            @Override public void onAguardando(String m) {
+                                if (attempt == 6) {
+                                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Ainda sem código. Confirma que o bot está online.", Toast.LENGTH_LONG).show());
+                                }
+                            }
+                            @Override public void onErro(String e) {
+                                if (attempt == 6) runOnUiThread(() -> Toast.makeText(MainActivity.this, e, Toast.LENGTH_SHORT).show());
+                            }
+                        });
+                    }, attempt * 4000L);
+                }
+            }
+            @Override public void onErro(String mensagem) {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, mensagem, Toast.LENGTH_SHORT).show());
+            }
+        });
+    }
+
 }

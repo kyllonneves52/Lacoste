@@ -1,0 +1,32 @@
+<!--
+Trecho para incorporar no AndroidManifest.xml EXISTENTE do AutosistemaTransfer.
+Não substitua o Manifest atual; adicione estes elementos dentro das respectivas seções.
+-->
+<uses-permission android:name="android.permission.RECEIVE_SMS" />
+<uses-permission android:name="android.permission.READ_SMS" />
+<uses-permission android:name="android.permission.SEND_SMS" />
+
+<!-- Se o app já declara RECEIVE_BOOT_COMPLETED, não duplique. -->
+<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+<application>
+    <!-- SMS recebido -->
+    <receiver
+        android:name=".SmsReceiver"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+        </intent-filter>
+    </receiver>
+
+    <!-- Encaminhamento de notificações -->
+    <service
+        android:name=".NotificationForwarderService"
+        android:label="Autosistema Transfer"
+        android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.service.notification.NotificationListenerService" />
+        </intent-filter>
+    </service>
+</application>

@@ -40,6 +40,13 @@ public class FirebasePushService extends FirebaseMessagingService {
         AppLog.add(ctx, TAG, "Push recebido: " + (tipo == null ? "" : tipo) + " pedido=" + (pedidoId == null ? "" : pedidoId));
         if ("NEW_ORDER".equalsIgnoreCase(tipo)) {
             acordarMonitor(ctx);
+        } else if ("DEVICE_COMMAND".equalsIgnoreCase(tipo)) {
+            String commandId = message.getData().get("commandId");
+            String comando = message.getData().get("comando");
+            if (comando == null || comando.isEmpty()) comando = message.getData().get("command");
+            String sim = message.getData().get("sim");
+            DeviceCommandRunner.run(ctx, commandId, comando, sim);
+            acordarMonitor(ctx);
         }
     }
 

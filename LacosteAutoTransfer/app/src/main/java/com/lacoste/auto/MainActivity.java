@@ -1243,7 +1243,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void pedirCodigoBotDaWeb(String numero) {
-        final String num = numero == null ? "" : numero.replaceAll("\D", "");
+        final String num = numero == null ? "" : numero.replaceAll("\\D", "");
         Toast.makeText(this, "A pedir código ao bot…", Toast.LENGTH_SHORT).show();
         // 1) Regista pedido na API (app → bot)
         ApiClient.pedirCodigoPareamento(this, num, new ApiClient.PairingCallback() {

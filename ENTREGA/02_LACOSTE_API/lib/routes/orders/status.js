@@ -1,1 +1,0 @@
-const {sql}=require('../../db');const {json}=require('../../common');module.exports=async(req,res)=>{try{const q=await sql`SELECT * FROM orders WHERE id=${String(req.query.id||'')} LIMIT 1`;if(!q.rows[0])return json(res,404,{ok:false,message:'Pedido não encontrado'});return json(res,200,{ok:true,pedido:q.rows[0]})}catch(e){return json(res,500,{ok:false,message:e.message})}};

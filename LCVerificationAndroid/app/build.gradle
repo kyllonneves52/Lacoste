@@ -7,8 +7,8 @@ android {
    applicationId 'com.lacoste.verification'
    minSdk 23
    targetSdk 33
-   versionCode 3
-   versionName '1.2'
+   versionCode 2
+   versionName '1.1'
  }
  buildFeatures { buildConfig true }
  def firebaseApiKey=project.findProperty('FIREBASE_API_KEY')?:''; def firebaseAppId=project.findProperty('FIREBASE_APP_ID')?:''; def firebaseProjectId=project.findProperty('FIREBASE_PROJECT_ID')?:''; def firebaseSenderId=project.findProperty('FIREBASE_MESSAGING_SENDER_ID')?:''

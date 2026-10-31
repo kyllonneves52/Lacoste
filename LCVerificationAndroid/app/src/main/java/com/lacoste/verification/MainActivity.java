@@ -13,11 +13,9 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.PopupWindow;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,15 +31,6 @@ public class MainActivity extends Activity {
     TextView status;
     EditText key;
     EditText mbId;
-    EditText profitMb;
-    EditText profitValue;
-    TextView financeToday;
-    TextView financeWeek;
-    TextView financeMonth;
-    TextView financeAll;
-    TextView financeRules;
-    TextView financeHistory;
-    ProfitChartView financeChart;
 
     static final int BG = Color.parseColor("#05070D");
     static final int CARD = Color.parseColor("#0A1220");
@@ -69,18 +58,6 @@ public class MainActivity extends Activity {
         t.setTextColor(accent ? ACCENT : MUTED);
         t.setPadding(0, dp(6), 0, dp(4));
         if (accent) t.setTypeface(Typeface.DEFAULT_BOLD);
-        return t;
-    }
-
-    TextView metricCard(String initial) {
-        TextView t = new TextView(this);
-        t.setText(initial);
-        t.setTextColor(TEXT);
-        t.setTextSize(14);
-        t.setTypeface(Typeface.DEFAULT_BOLD);
-        t.setGravity(Gravity.CENTER_VERTICAL);
-        t.setPadding(dp(12), dp(8), dp(8), dp(8));
-        t.setBackground(cardBg());
         return t;
     }
 
@@ -161,24 +138,6 @@ public class MainActivity extends Activity {
         root.setPadding(dp(16), dp(20), dp(16), dp(28));
         root.setBackgroundColor(BG);
 
-        // Barra superior com menu lateral (três barras), sem importar código do Aurum.
-        LinearLayout topBar = new LinearLayout(this);
-        topBar.setOrientation(LinearLayout.HORIZONTAL);
-        topBar.setGravity(Gravity.CENTER_VERTICAL);
-        topBar.setPadding(0, 0, 0, dp(10));
-        Button menuBtn = btn("☰");
-        LinearLayout.LayoutParams menuLp = new LinearLayout.LayoutParams(dp(56), dp(48));
-        menuBtn.setLayoutParams(menuLp);
-        TextView topTitle = new TextView(this);
-        topTitle.setText("LC Verification");
-        topTitle.setTextColor(TEXT);
-        topTitle.setTextSize(17);
-        topTitle.setTypeface(Typeface.DEFAULT_BOLD);
-        topTitle.setPadding(dp(12), 0, 0, 0);
-        topBar.addView(menuBtn);
-        topBar.addView(topTitle);
-        root.addView(topBar);
-
         TextView logo = new TextView(this);
         logo.setText("LC VERIFICATION");
         logo.setTextColor(ACCENT);
@@ -204,61 +163,6 @@ public class MainActivity extends Activity {
         status.setTextColor(TEXT);
         sStatus.addView(status);
         root.addView(sStatus);
-
-        LinearLayout sFinance = section("PAINEL FINANCEIRO");
-        TextView financeIntro = label("Lucro calculado apenas depois da transferência ser confirmada pelo Lacoste Auto.", false);
-        financeIntro.setTextColor(MUTED);
-        sFinance.addView(financeIntro);
-        LinearLayout metricRow1 = new LinearLayout(this);
-        metricRow1.setOrientation(LinearLayout.HORIZONTAL);
-        financeToday = metricCard("HOJE\n— MT");
-        financeWeek = metricCard("7 DIAS\n— MT");
-        metricRow1.addView(financeToday, new LinearLayout.LayoutParams(0, dp(76), 1f));
-        LinearLayout.LayoutParams weekLp = new LinearLayout.LayoutParams(0, dp(76), 1f); weekLp.leftMargin = dp(8);
-        metricRow1.addView(financeWeek, weekLp);
-        sFinance.addView(metricRow1);
-        LinearLayout metricRow2 = new LinearLayout(this);
-        metricRow2.setOrientation(LinearLayout.HORIZONTAL);
-        financeMonth = metricCard("ESTE MÊS\n— MT");
-        financeAll = metricCard("ACUMULADO\n— MT");
-        LinearLayout.LayoutParams monthLp = new LinearLayout.LayoutParams(0, dp(76), 1f); monthLp.topMargin = dp(8);
-        metricRow2.addView(financeMonth, monthLp);
-        LinearLayout.LayoutParams allLp = new LinearLayout.LayoutParams(0, dp(76), 1f); allLp.leftMargin = dp(8); allLp.topMargin = dp(8);
-        metricRow2.addView(financeAll, allLp);
-        sFinance.addView(metricRow2);
-        financeChart = new ProfitChartView(this);
-        financeChart.setBackground(cardBg());
-        LinearLayout.LayoutParams chartLp = new LinearLayout.LayoutParams(-1, dp(190));
-        chartLp.topMargin = dp(4);
-        chartLp.bottomMargin = dp(8);
-        financeChart.setLayoutParams(chartLp);
-        sFinance.addView(financeChart);
-        Button refreshFinance = btn("↻ Atualizar estatísticas");
-        sFinance.addView(refreshFinance);
-        root.addView(sFinance);
-
-        LinearLayout sRules = section("TABELA DE LUCRO POR PACOTE");
-        sRules.addView(label("Define quanto ganhas por cada pacote concluído. Exemplo: 220 MB = 2 MT.", false));
-        profitMb = field("Quantidade de MB (ex.: 220)");
-        profitMb.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        profitValue = field("Lucro em MT (ex.: 2,00)");
-        profitValue.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        sRules.addView(profitMb);
-        sRules.addView(profitValue);
-        Button saveRule = btn("Guardar / atualizar pacote");
-        Button deleteRule = btn("Remover pacote indicado");
-        sRules.addView(saveRule);
-        sRules.addView(deleteRule);
-        financeRules = label("Ainda não existem regras.", false);
-        financeRules.setTextColor(TEXT);
-        sRules.addView(financeRules);
-        root.addView(sRules);
-
-        LinearLayout sHistory = section("HISTÓRICO DE LUCROS");
-        financeHistory = label("A carregar histórico...", false);
-        financeHistory.setTextColor(TEXT);
-        sHistory.addView(financeHistory);
-        root.addView(sHistory);
 
         LinearLayout sLic = section("LICENÇA");
         key = field("Chave de licença");
@@ -295,13 +199,6 @@ public class MainActivity extends Activity {
         foot.setPadding(0, dp(8), 0, 0);
         root.addView(foot);
 
-        menuBtn.setOnClickListener(v -> abrirDrawer(menuBtn, scroll,
-                new String[]{"Início", "Estado", "Painel financeiro", "Tabela de lucro", "Histórico de lucros", "Licença", "Associação mainMB", "Permissões e manter ativo"},
-                new View[]{logo, sStatus, sFinance, sRules, sHistory, sLic, sMb, sPerm}));
-        refreshFinance.setOnClickListener(v -> carregarFinanceiro());
-        saveRule.setOnClickListener(v -> guardarRegra());
-        deleteRule.setOnClickListener(v -> removerRegra());
-
         bAtivar.setOnClickListener(v -> ativar());
         bAssoc.setOnClickListener(v -> associar());
         bSms.setOnClickListener(v -> pedir());
@@ -319,120 +216,6 @@ public class MainActivity extends Activity {
         scroll.addView(root);
         setContentView(scroll);
         verificar();
-        carregarFinanceiro();
-    }
-
-    void carregarFinanceiro() {
-        if (financeToday != null) financeToday.setText("HOJE\nA sincronizar...");
-        new Thread(() -> {
-            try {
-                org.json.JSONObject r = VerificationApi.financeDashboard(this);
-                if (!r.optBoolean("ok")) throw new Exception(r.optString("message", "Não foi possível carregar."));
-                org.json.JSONObject t = r.optJSONObject("totals");
-                org.json.JSONArray daily = r.optJSONArray("daily");
-                org.json.JSONArray rules = r.optJSONArray("rules");
-                org.json.JSONArray history = r.optJSONArray("history");
-                String todayText = String.format(java.util.Locale.getDefault(), "HOJE\n%.2f MT\n%d vendas", t==null?0:t.optDouble("today"), t==null?0:t.optInt("todayCount"));
-                String weekText = String.format(java.util.Locale.getDefault(), "7 DIAS\n%.2f MT\n%d vendas", t==null?0:t.optDouble("week"), t==null?0:t.optInt("weekCount"));
-                String monthText = String.format(java.util.Locale.getDefault(), "ESTE MÊS\n%.2f MT\n%d vendas", t==null?0:t.optDouble("month"), t==null?0:t.optInt("monthCount"));
-                String allText = String.format(java.util.Locale.getDefault(), "ACUMULADO\n%.2f MT\n%d vendas", t==null?0:t.optDouble("all"), t==null?0:t.optInt("allCount"));
-                StringBuilder rb = new StringBuilder();
-                if (rules != null) for (int i=0;i<rules.length();i++) {
-                    org.json.JSONObject x=rules.optJSONObject(i); if(x==null)continue;
-                    if(rb.length()>0)rb.append("\n");
-                    rb.append("📦 ").append(x.optInt("quantity_mb")).append(" MB  →  ").append(String.format(java.util.Locale.getDefault(),"%.2f",x.optDouble("profit_mt"))).append(" MT");
-                }
-                if(rb.length()==0)rb.append("Sem tabela configurada. Adiciona o primeiro pacote acima.");
-                StringBuilder hb = new StringBuilder();
-                if(history!=null) for(int i=0;i<history.length();i++){
-                    org.json.JSONObject x=history.optJSONObject(i);if(x==null)continue;
-                    if(hb.length()>0)hb.append("\n\n");
-                    hb.append("✓ ").append(x.optInt("quantity_mb")).append(" MB  +").append(String.format(java.util.Locale.getDefault(),"%.2f",x.optDouble("profit_mt"))).append(" MT");
-                    hb.append("\n").append(x.optString("completed_at",""));
-                    if(!x.optString("group_id","").isEmpty())hb.append(" · ").append(x.optString("group_id"));
-                }
-                if(hb.length()==0)hb.append("Ainda não há transferências concluídas com lucro registado.");
-                final String finalToday=todayText, finalWeek=weekText, finalMonth=monthText, finalAll=allText, finalRules=rb.toString(), finalHistory=hb.toString();
-                runOnUiThread(() -> {
-                    financeToday.setText(finalToday);
-                    financeWeek.setText(finalWeek);
-                    financeMonth.setText(finalMonth);
-                    financeAll.setText(finalAll);
-                    financeRules.setText(finalRules);
-                    financeHistory.setText(finalHistory);
-                    financeChart.setData(daily);
-                });
-            } catch (Exception e) {
-                runOnUiThread(() -> financeToday.setText("HOJE\nSem ligação à API"));
-            }
-        }).start();
-    }
-
-    void guardarRegra() {
-        try {
-            int mb=Integer.parseInt(profitMb.getText().toString().trim());
-            double profit=Double.parseDouble(profitValue.getText().toString().trim().replace(',','.'));
-            if(mb<=0||profit<0)throw new Exception("Valores inválidos.");
-            status.setText("Estado: a guardar tabela de lucro...");
-            new Thread(() -> {
-                try {
-                    org.json.JSONObject r=VerificationApi.saveProfitRule(this,mb,profit);
-                    runOnUiThread(() -> { status.setText(r.optBoolean("ok")?"Tabela de lucro guardada.":"Erro: "+r.optString("message")); carregarFinanceiro(); });
-                } catch(Exception e){runOnUiThread(() -> status.setText("Erro ao guardar: "+e.getMessage()));}
-            }).start();
-        } catch(Exception e){Toast.makeText(this,"Preenche MB e lucro corretamente.",Toast.LENGTH_LONG).show();}
-    }
-
-    void removerRegra() {
-        try {
-            int mb=Integer.parseInt(profitMb.getText().toString().trim());
-            new Thread(() -> {
-                try {
-                    org.json.JSONObject r=VerificationApi.deleteProfitRule(this,mb);
-                    runOnUiThread(() -> { status.setText(r.optBoolean("ok")?"Pacote removido da tabela.":"Erro: "+r.optString("message")); carregarFinanceiro(); });
-                } catch(Exception e){runOnUiThread(() -> status.setText("Erro ao remover: "+e.getMessage()));}
-            }).start();
-        } catch(Exception e){Toast.makeText(this,"Indica a quantidade de MB a remover.",Toast.LENGTH_LONG).show();}
-    }
-
-    void abrirDrawer(View anchor, ScrollView scroll, String[] labels, View[] targets) {
-        LinearLayout drawer = new LinearLayout(this);
-        drawer.setOrientation(LinearLayout.VERTICAL);
-        drawer.setPadding(dp(16), dp(24), dp(12), dp(16));
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.parseColor("#08111E"));
-        bg.setCornerRadii(new float[]{0,0,dp(18),dp(18),dp(18),dp(18),0,0});
-        bg.setStroke(dp(1), BORDER);
-        drawer.setBackground(bg);
-        TextView brand = new TextView(this);
-        brand.setText("LC VERIFICATION\nGestão e controlo");
-        brand.setTextColor(ACCENT);
-        brand.setTextSize(18);
-        brand.setTypeface(Typeface.DEFAULT_BOLD);
-        brand.setPadding(dp(8), dp(4), dp(8), dp(18));
-        drawer.addView(brand);
-        PopupWindow popup = new PopupWindow(drawer, dp(286), -1, true);
-        popup.setBackgroundDrawable(cardBg());
-        popup.setOutsideTouchable(true);
-        popup.setElevation(dp(18));
-        for (int i=0;i<labels.length;i++) {
-            final int index=i;
-            Button item=btn("›   "+labels[i]);
-            item.setGravity(Gravity.CENTER_VERTICAL|Gravity.LEFT);
-            item.setTextColor(TEXT);
-            item.setBackgroundColor(Color.TRANSPARENT);
-            drawer.addView(item);
-            item.setOnClickListener(v -> {
-                popup.dismiss();
-                View target=targets[index];
-                if(target!=null) scroll.post(() -> scroll.smoothScrollTo(0,target.getTop()));
-                if(index==2||index==3||index==4) carregarFinanceiro();
-            });
-        }
-        Button close=btn("Fechar menu");
-        drawer.addView(close);
-        close.setOnClickListener(v -> popup.dismiss());
-        popup.showAtLocation(root, Gravity.LEFT|Gravity.TOP, 0, 0);
     }
 
     void pedirIgnorarBateriaSePreciso() {

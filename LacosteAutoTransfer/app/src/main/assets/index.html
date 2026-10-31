@@ -213,8 +213,13 @@
   </div>
 
   <div class="card">
-    <h2>Resumo financeiro</h2>
-    <div style="font-size:13px;color:var(--muted)">Os valores, a tabela de lucro e os gráficos são sincronizados pela API e geridos no LC Verification. Este ecrã não guarda tabelas locais.</div>
+    <h2>Lucros do dia</h2>
+    <div id="lucros-resumo" style="font-size:13px;margin-bottom:8px">—</div>
+    <label>Tabela (MB → lucro MT) — ex: 220,2</label>
+    <input type="text" id="input-lucro-linha" placeholder="220,2">
+    <button onclick="guardarLinhaLucro()">Guardar na tabela</button>
+    <div id="lucros-tabela" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
+    <canvas id="chart-lucros" width="320" height="120" style="width:100%;max-height:140px;margin-top:10px;background:var(--card2);border-radius:12px"></canvas>
   </div>
 
   <div class="card">
@@ -480,6 +485,54 @@
       setTimeout(carregarPedidos, 800);
     } catch (e) { mostrarToast(e.message); }
   }
+  function guardarLinhaLucro() {
+    var v = (document.getElementById('input-lucro-linha') || {}).value || '';
+    var parts = v.split(/[,;]/);
+    if (parts.length < 2) { mostrarToast('Use: 220,2'); return; }
+    try {
+      var tab = JSON.parse(localStorage.getItem('lucros_tabela') || '[]');
+      tab = tab.filter(function(x){ return Number(x.mb) !== Number(parts[0]); });
+      tab.push({ mb: Number(parts[0]), lucroMt: Number(String(parts[1]).replace(',','.')) });
+      localStorage.setItem('lucros_tabela', JSON.stringify(tab));
+      renderLucrosLocal();
+      mostrarToast('Tabela actualizada');
+    } catch (e) { mostrarToast(e.message); }
+  }
+  function renderLucrosLocal() {
+    var tab = [];
+    try { tab = JSON.parse(localStorage.getItem('lucros_tabela') || '[]'); } catch(e) {}
+    var el = document.getElementById('lucros-tabela');
+    var res = document.getElementById('lucros-resumo');
+    if (el) el.innerHTML = tab.map(function(x){ return x.mb + 'MB → ' + x.lucroMt + ' MT'; }).join('<br>') || 'Vazia — ex: 220,2';
+    var diario = {};
+    try { diario = JSON.parse(localStorage.getItem('lucros_diario') || '{}'); } catch(e) {}
+    var hoje = new Date().toISOString().slice(0,10);
+    var total = (diario[hoje] && diario[hoje].total) || 0;
+    if (res) res.innerHTML = 'Hoje: <b style="color:var(--accent)">' + total + ' MT</b>';
+    desenharGraficoLucros(diario);
+  }
+  function desenharGraficoLucros(diario) {
+    var c = document.getElementById('chart-lucros');
+    if (!c || !c.getContext) return;
+    var ctx = c.getContext('2d');
+    var dias = Object.keys(diario || {}).sort().slice(-7);
+    ctx.clearRect(0,0,c.width,c.height);
+    if (!dias.length) {
+      ctx.fillStyle = '#94A3B8'; ctx.font = '12px sans-serif';
+      ctx.fillText('Sem dados de lucro ainda', 12, 60); return;
+    }
+    var vals = dias.map(function(d){ return Number((diario[d] && diario[d].total) || 0); });
+    var max = Math.max.apply(null, vals.concat([1]));
+    var w = c.width, h = c.height, pad = 20;
+    var bw = (w - pad*2) / dias.length;
+    vals.forEach(function(v, i) {
+      var barH = (v / max) * (h - pad*2);
+      ctx.fillStyle = '#22C55E';
+      ctx.fillRect(pad + i * bw + 4, h - pad - barH, bw - 8, barH);
+      ctx.fillStyle = '#94A3B8'; ctx.font = '9px sans-serif';
+      ctx.fillText(dias[i].slice(5), pad + i * bw + 4, h - 6);
+    });
+  }
   function mostrarCodigoBot(codigo) {
     var el = document.getElementById('codigo-bot');
     if (el) el.textContent = codigo || '—';
@@ -494,6 +547,9 @@
       mostrarToast('Copiado');
     } catch (e) { mostrarToast(e.message); }
   }
+
+  window.addEventListener('load', () => {
+    try { renderLucrosLocal(); } catch(e) {}
 
   // original load
   window.addEventListener('load', () => {

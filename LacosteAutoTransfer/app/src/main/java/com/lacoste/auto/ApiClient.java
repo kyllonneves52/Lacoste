@@ -413,31 +413,6 @@ public class ApiClient {
         }
     }
 
-    public static void carregarPainelFinanceiro(final Context ctx, final Callback cb) {
-        new Thread(() -> {
-            HttpURLConnection conn = null;
-            try {
-                String base = Prefs.getUrlPainel(ctx);
-                if (base == null || base.trim().isEmpty()) throw new Exception("Configura primeiro o endereço da API.");
-                String aid = obterAndroidId(ctx);
-                String token = Prefs.getToken(ctx);
-                URL url = new URL(base.replaceAll("/+$", "") + "/api/lcverification/finance/dashboard");
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setConnectTimeout(12000);
-                conn.setReadTimeout(15000);
-                conn.setRequestProperty("Accept", "application/json");
-                conn.setRequestProperty("X-Android-ID", aid);
-                conn.setRequestProperty("X-App-Token", token);
-                JSONObject result = lerResposta(conn);
-                if (result != null && result.optBoolean("ok")) postCallback(cb, true, result.toString());
-                else postCallback(cb, false, result == null ? "Sem resposta da API." : result.optString("message", "Não foi possível carregar o painel."));
-            } catch (Exception e) {
-                postCallback(cb, false, e.getMessage() == null ? "Falha de ligação." : e.getMessage());
-            } finally { if (conn != null) conn.disconnect(); }
-        }).start();
-    }
-
     private static JSONObject postJson(String urlStr, JSONObject body, Map<String, String> headers) throws Exception {
         HttpURLConnection conn = null;
         try {

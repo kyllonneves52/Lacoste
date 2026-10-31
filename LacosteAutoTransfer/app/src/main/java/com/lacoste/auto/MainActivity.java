@@ -49,8 +49,6 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView licencaView;
     private TextView licencaPerfil;
-    private TextView lucroResumoAuto;
-    private ProfitChartView lucroChartAuto;
     private LinearLayout historicoLista;
     private LinearLayout paginaInicio;
     private LinearLayout paginaHistorico;
@@ -348,7 +346,6 @@ public class MainActivity extends AppCompatActivity {
         navHistorico.setTextColor(index == 1 ? 0xFF22C55E : 0xFF94A3B8);
         navPerfil.setTextColor(index == 2 ? 0xFF22C55E : 0xFF94A3B8);
         if (index == 1) preencherHistorico();
-        if (index == 0 && lucroResumoAuto != null) atualizarResumoFinanceiro();
         if (index == 2 && licencaPerfil != null) {
             licencaPerfil.setText(LicenseManager.tempoRestante(this));
         }
@@ -591,28 +588,6 @@ public class MainActivity extends AppCompatActivity {
         credito.addView(resultadoCredito);
         content.addView(credito);
 
-        // PAINEL FINANCEIRO RESUMIDO — gestão completa fica no LC Verification.
-        LinearLayout financeiro = panel();
-        financeiro.addView(sectionTitle("📊", "Resumo financeiro", "Dados sincronizados com a API; configure os preços no LC Verification."));
-        lucroResumoAuto = text("Hoje: — MT\n7 dias: — MT\nMês: — MT", 13);
-        lucroResumoAuto.setTextColor(0xFFE5E9F0);
-        financeiro.addView(lucroResumoAuto);
-        lucroChartAuto = new ProfitChartView(this);
-        lucroChartAuto.setBackground(round(0xFF172538, 12));
-        LinearLayout.LayoutParams lucroChartLp = new LinearLayout.LayoutParams(-1, dp(150));
-        lucroChartLp.topMargin = dp(8);
-        financeiro.addView(lucroChartAuto, lucroChartLp);
-        Button atualizarFinanceiro = button("↻  Atualizar resumo financeiro");
-        atualizarFinanceiro.setOnClickListener(v -> atualizarResumoFinanceiro());
-        financeiro.addView(atualizarFinanceiro);
-        Button abrirLCV = button("Abrir gestão financeira no LC Verification");
-        abrirLCV.setOnClickListener(v -> {
-            try { startActivity(getPackageManager().getLaunchIntentForPackage("com.lacoste.verification")); }
-            catch (Exception e) { Toast.makeText(this, "Instala o LC Verification para gerir a tabela e o histórico.", Toast.LENGTH_LONG).show(); }
-        });
-        financeiro.addView(abrirLCV);
-        content.addView(financeiro);
-
         // 5 — PERMISSÕES E SISTEMA
         LinearLayout permissoes = panel();
         permissoes.addView(sectionTitle("♢", "Permissões e sistema", "Configure permissões e otimizações necessárias para o funcionamento."));
@@ -672,25 +647,6 @@ public class MainActivity extends AppCompatActivity {
         s.setClipToPadding(true);
         s.setBackground(round(0xFF1E2838, 14));
         return s;
-    }
-
-    private void atualizarResumoFinanceiro() {
-        if (lucroResumoAuto != null) lucroResumoAuto.setText("A sincronizar com a API...");
-        ApiClient.carregarPainelFinanceiro(this, (ok, raw) -> runOnUiThread(() -> {
-            if (!ok) { if (lucroResumoAuto != null) lucroResumoAuto.setText("Painel indisponível: " + raw); return; }
-            try {
-                org.json.JSONObject data = new org.json.JSONObject(raw);
-                org.json.JSONObject t = data.optJSONObject("totals");
-                String resumo = String.format(java.util.Locale.getDefault(),
-                        "Hoje: %.2f MT  (%d vendas)\n7 dias: %.2f MT  (%d vendas)\nMês: %.2f MT  (%d vendas)\nAcumulado: %.2f MT",
-                        t==null?0:t.optDouble("today"),t==null?0:t.optInt("todayCount"),
-                        t==null?0:t.optDouble("week"),t==null?0:t.optInt("weekCount"),
-                        t==null?0:t.optDouble("month"),t==null?0:t.optInt("monthCount"),
-                        t==null?0:t.optDouble("all"));
-                lucroResumoAuto.setText(resumo);
-                lucroChartAuto.setData(data.optJSONArray("daily"));
-            } catch (Exception e) { lucroResumoAuto.setText("Resposta financeira inválida: " + e.getMessage()); }
-        }));
     }
 
     private LinearLayout construirHistorico() {
@@ -1022,12 +978,13 @@ public class MainActivity extends AppCompatActivity {
                             try {
                                 if (quando.length() >= 19) {
                                     // keep as is or format
-                                } else if (quando.matches("\\d+")) {
+                                } else if (quando.matches("\d+")) {
                                     quando = fmt.format(new java.util.Date(Long.parseLong(quando)));
                                 }
                             } catch (Exception ignored) {}
                             String linha = "Fila API · " + quando
-                                + "\n" + p.optString("numero", "—") + " — "
+                                + "
+" + p.optString("numero", "—") + " — "
                                 + p.optInt("quantidadeMB", p.optInt("mb", 0)) + "MB · "
                                 + p.optString("status", "—")
                                 + " · ref " + p.optString("id", p.optString("pedidoId", ""));

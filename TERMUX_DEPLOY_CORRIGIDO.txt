@@ -1,3 +1,0 @@
-# Deploy novo painel
-curl -s -X POST 'http://fi17.bot-hosting.cloud:25143/api/setup' \
-  -H 'X-Admin-Password: '"$ADMIN_PASSWORD"

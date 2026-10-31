@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Lacoste Auto</string>
-    <string name="url_painel_sugestao">http://node.modz.ink:25584</string>
+    <string name="url_painel_sugestao">http://fi4.bot-hosting.cloud:25205</string>
     <string name="accessibility_desc">Permite ao Lacoste Auto ler e responder à caixa de diálogo do USSD para automatizar transferências.</string>
 </resources>

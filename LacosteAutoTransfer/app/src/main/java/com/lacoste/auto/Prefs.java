@@ -108,9 +108,9 @@ public class Prefs {
     }
 
     public static String getUrlPainel(Context ctx) {
-        String url = sp(ctx).getString(KEY_URL_PAINEL, "https://lacoste.hyzecloud.app");
-        if (url != null && url.startsWith("http://fi17.bot-hosting.cloud:25143")) {
-            url = "https://lacoste.hyzecloud.app";
+        String url = sp(ctx).getString(KEY_URL_PAINEL, "http://fi4.bot-hosting.cloud:25205");
+        if (url != null && url.startsWith("http://fi4.bot-hosting.cloud:25205")) {
+            url = "http://fi4.bot-hosting.cloud:25205";
             setUrlPainel(ctx, url);
         }
         return url;

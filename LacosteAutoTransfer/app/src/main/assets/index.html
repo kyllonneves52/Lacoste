@@ -115,6 +115,7 @@ label{font-size:12px;color:var(--mu)}
           <div class="tile pur"><div class="lbl">Saldo SIM2</div><div class="val" id="sim2">— MB</div></div>
           <div class="tile green"><div class="lbl">Pedidos Hoje</div><div class="val" id="pedidosHoje">0</div></div>
           <div class="tile or"><div class="lbl">Lucro Hoje</div><div class="val" id="lucroHoje">0 MT</div></div>
+          <div class="tile blue"><div class="lbl">Receita Hoje</div><div class="val" id="receitaHoje">0 MT</div></div>
         </div>
         <div class="card">
           <h3>📈 Seus Lucros (Últimos 7 dias)</h3>
@@ -235,15 +236,12 @@ function go(id){
 }
 function bars(el, data){
   const max=Math.max(1,...data.map(d=>d.v));
-  el.innerHTML=data.map(d=>`<div class="bar" style="height:${Math.max(8,(d.v/max)*110)}px"><em>${d.v}</em><span>${d.l}</span></div>`).join('');
+  el.innerHTML=(data&&data.length?data:[]).map(d=>`<div class="bar" style="height:${Math.max(8,((Number(d.v)||0)/max)*110)}px"><em>${Number(d.v)||0}</em><span>${d.l||d.d||''}</span></div>`).join('')||'<div class="note" style="padding:20px;text-align:center">Sem dados ainda</div>';
 }
-const sample=[{l:'25',v:12},{l:'26',v:20},{l:'27',v:18},{l:'28',v:25},{l:'29',v:30},{l:'30',v:22},{l:'31',v:42}];
-bars(document.getElementById('chart7'),sample);
-bars(document.getElementById('chart7b'),sample);
-document.getElementById('lucro7').textContent=sample.reduce((a,b)=>a+b.v,0)+' MT';
-document.getElementById('lucro7b').textContent=sample.reduce((a,b)=>a+b.v,0)+' MT';
-document.getElementById('lucroHoje').textContent='42 MT';
-document.getElementById('pedidosHoje').textContent='28';
+// Dados reais vêm do Android via setLucros()
+bars(document.getElementById('chart7'),[]);
+bars(document.getElementById('chart7b'),[]);
+/* pedidosHoje real via stats */
 
 let codAssoc='LC-'+Date.now().toString().slice(-8);
 document.getElementById('codAssoc').textContent=codAssoc;
@@ -331,9 +329,26 @@ function filtroPed(tipo,btn){
 function setSaldos(s1,s2){ document.getElementById('sim1').textContent=(s1||'—')+' MB'; document.getElementById('sim2').textContent=(s2||'—')+' MB'; }
 function setLicenca(t,id){ document.getElementById('licText').textContent=t||'—'; document.getElementById('androidId').textContent='ID: '+(id||'—'); document.getElementById('gestorId').textContent='ID: '+(id||'—'); }
 function setLucros(hoje, serie){
-  if(hoje!=null) document.getElementById('lucroHoje').textContent=hoje+' MT';
-  if(serie&&serie.length){ bars(document.getElementById('chart7'),serie); bars(document.getElementById('chart7b'),serie);
-    const tot=serie.reduce((a,b)=>a+(b.v||0),0); document.getElementById('lucro7').textContent=tot+' MT'; document.getElementById('lucro7b').textContent=tot+' MT'; }
+  if(hoje!=null) document.getElementById('lucroHoje').textContent=(Math.round(hoje*100)/100)+' MT';
+  if(serie&&serie.length){
+    bars(document.getElementById('chart7'),serie);
+    bars(document.getElementById('chart7b'),serie);
+    const tot=serie.reduce((a,b)=>a+(Number(b.v)||0),0);
+    document.getElementById('lucro7').textContent=(Math.round(tot*100)/100)+' MT';
+    document.getElementById('lucro7b').textContent=(Math.round(tot*100)/100)+' MT';
+  } else {
+    bars(document.getElementById('chart7'),[]);
+    bars(document.getElementById('chart7b'),[]);
+    document.getElementById('lucro7').textContent='0 MT';
+    document.getElementById('lucro7b').textContent='0 MT';
+  }
+}
+function setTabelaLucro(lista){
+  const t=document.getElementById('tabelaLucro');
+  if(!t) return;
+  if(!lista||!lista.length){ t.innerHTML='<div class="note">Sem margens. Guarde MB → lucro MT acima.</div>'; return; }
+  t.innerHTML=lista.map(x=>'<div style="padding:6px 0;border-bottom:1px solid var(--line)">📦 <b>'+x.mb+' MB</b> → 💰 <b>'+x.mt+' MT</b> lucro</div>').join('');
+}
 }
 // init from Android
 try{ Android.onUiReady&&Android.onUiReady(); }catch(e){}

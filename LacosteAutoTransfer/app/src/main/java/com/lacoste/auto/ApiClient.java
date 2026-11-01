@@ -518,20 +518,10 @@ public class ApiClient {
         }
     }
 
-    public static void reportCommandResult(final Context ctx, final JSONObject body) {
-        final String base = Prefs.getUrlPainel(ctx);
-        if (base == null || base.isEmpty()) return;
-        new Thread(() -> {
-            try {
-                java.util.Map<String, String> headers = new java.util.HashMap<>();
-                headers.put("Content-Type", "application/json");
-                headers.put("X-Android-Id", obterAndroidId(ctx));
-                String token = Prefs.getToken(ctx);
-                if (token != null && !token.isEmpty()) headers.put("X-App-Token", token);
-                postJson(base + "/api/autosistema/dispositivo/command-result", body, headers);
-            } catch (Exception ignored) {}
-        }).start();
-    }
+
+    // =========================================================
+    // PAREAMENTO / CONECTAR BOT
+    // =========================================================
 
     public interface PairingCallback {
         void onCodigo(String codigo, String numero, String sessao);
@@ -541,7 +531,10 @@ public class ApiClient {
 
     public static void pedirCodigoPareamento(final Context ctx, final String numero, final PairingCallback cb) {
         final String base = Prefs.getUrlPainel(ctx);
-        if (base == null || base.isEmpty()) { if (cb != null) cb.onErro("URL do painel não configurada."); return; }
+        if (base == null || base.isEmpty()) {
+            if (cb != null) cb.onErro("URL do painel não configurada.");
+            return;
+        }
         new Thread(() -> {
             try {
                 JSONObject body = new JSONObject();
@@ -551,7 +544,10 @@ public class ApiClient {
                 headers.put("Content-Type", "application/json");
                 headers.put("X-Android-Id", obterAndroidId(ctx));
                 JSONObject resp = postJson(base + "/api/app/pairing/pedir", body, headers);
-                if (resp == null) { if (cb != null) cb.onErro("Sem resposta."); return; }
+                if (resp == null) {
+                    if (cb != null) cb.onErro("Sem resposta.");
+                    return;
+                }
                 if (resp.optBoolean("ok") && resp.optString("codigo", "").length() > 0) {
                     if (cb != null) cb.onCodigo(resp.optString("codigo"), resp.optString("numero", numero), resp.optString("sessao", ""));
                 } else if (resp.optBoolean("ok")) {
@@ -559,13 +555,18 @@ public class ApiClient {
                 } else {
                     if (cb != null) cb.onErro(resp.optString("message", "Falha"));
                 }
-            } catch (Exception e) { if (cb != null) cb.onErro(e.getMessage()); }
+            } catch (Exception e) {
+                if (cb != null) cb.onErro(e.getMessage());
+            }
         }).start();
     }
 
     public static void consultarCodigoPareamento(final Context ctx, final String numero, final PairingCallback cb) {
         final String base = Prefs.getUrlPainel(ctx);
-        if (base == null || base.isEmpty()) { if (cb != null) cb.onErro("URL do painel não configurada."); return; }
+        if (base == null || base.isEmpty()) {
+            if (cb != null) cb.onErro("URL do painel não configurada.");
+            return;
+        }
         new Thread(() -> {
             try {
                 JSONObject body = new JSONObject();
@@ -574,13 +575,78 @@ public class ApiClient {
                 java.util.Map<String, String> headers = new java.util.HashMap<>();
                 headers.put("Content-Type", "application/json");
                 JSONObject resp = postJson(base + "/api/app/pairing/codigo", body, headers);
-                if (resp == null) { if (cb != null) cb.onErro("Sem resposta."); return; }
+                if (resp == null) {
+                    if (cb != null) cb.onErro("Sem resposta.");
+                    return;
+                }
                 if (resp.optBoolean("disponivel") && resp.optString("codigo", "").length() > 0) {
                     if (cb != null) cb.onCodigo(resp.optString("codigo"), resp.optString("numero", ""), resp.optString("sessao", ""));
                 } else {
                     if (cb != null) cb.onAguardando(resp.optString("message", "Ainda sem código"));
                 }
-            } catch (Exception e) { if (cb != null) cb.onErro(e.getMessage()); }
+            } catch (Exception e) {
+                if (cb != null) cb.onErro(e.getMessage());
+            }
         }).start();
     }
+
+    public interface StatsCallback {
+        void onStats(JSONObject stats);
+        void onErro(String mensagem);
+    }
+
+    public static void buscarEstatisticas(final Context ctx, final StatsCallback cb) {
+        final String base = Prefs.getUrlPainel(ctx);
+        final String token = Prefs.getToken(ctx);
+        if (base == null || base.isEmpty()) {
+            if (cb != null) cb.onErro("URL do painel não configurada.");
+            return;
+        }
+        new Thread(() -> {
+            try {
+                URL u = new URL(base + "/api/autosistema/dispositivo/stats");
+                HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(15000);
+                conn.setRequestProperty("X-Android-Id", obterAndroidId(ctx));
+                if (token != null && !token.isEmpty()) conn.setRequestProperty("X-App-Token", token);
+                JSONObject resp = lerResposta(conn);
+                conn.disconnect();
+                if (resp != null && resp.optBoolean("ok", false)) {
+                    if (cb != null) cb.onStats(resp);
+                } else {
+                    if (cb != null) cb.onErro(resp != null ? resp.optString("message", "Erro") : "Sem resposta");
+                }
+            } catch (Exception e) {
+                if (cb != null) cb.onErro(e.getMessage());
+            }
+        }).start();
+    }
+
+    public static void guardarLucroConfig(final Context ctx, final int mb, final double mt, final Callback cb) {
+        final String base = Prefs.getUrlPainel(ctx);
+        final String token = Prefs.getToken(ctx);
+        if (base == null || base.isEmpty()) {
+            if (cb != null) cb.onResultado(false, "URL do painel não configurada.");
+            return;
+        }
+        new Thread(() -> {
+            try {
+                JSONObject body = new JSONObject();
+                body.put("mb", mb);
+                body.put("mt", mt);
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                headers.put("Content-Type", "application/json");
+                headers.put("X-Android-Id", obterAndroidId(ctx));
+                if (token != null && !token.isEmpty()) headers.put("X-App-Token", token);
+                JSONObject resp = postJson(base + "/api/autosistema/dispositivo/lucro-config", body, headers);
+                boolean ok = resp != null && resp.optBoolean("ok", false);
+                if (cb != null) cb.onResultado(ok, resp != null ? resp.optString("message", ok ? "OK" : "Falha") : "Sem resposta");
+            } catch (Exception e) {
+                if (cb != null) cb.onResultado(false, e.getMessage());
+            }
+        }).start();
+    }
+
 }

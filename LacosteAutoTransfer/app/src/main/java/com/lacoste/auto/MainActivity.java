@@ -59,6 +59,10 @@ public class MainActivity extends AppCompatActivity {
     private TextView licencaView;
     private TextView licencaPerfil;
     private WebView webUi;
+    private FrameLayout contentHost;
+    private View nativeRoot;
+    private Button navMais;
+    private boolean dashboardAberto = false;
     private LinearLayout historicoLista;
     private LinearLayout paginaInicio;
     private LinearLayout paginaHistorico;
@@ -208,8 +212,9 @@ public class MainActivity extends AppCompatActivity {
         ApiClient.sincronizarFcmAgora(getApplicationContext());
 
         calcularEscala();
-        // Layout moderno (WebView com drawer)
-        abrirInterfaceWeb();
+        // SRC permanece como ecrã inicial; o dashboard MAIN abre em Mais.
+        construirInterfaceNativa();
+        atualizarQuadroRestantes();
         iniciarMonitorService();
         licenseHandler.post(licenseCheckRunnable);
     }
@@ -307,19 +312,80 @@ public class MainActivity extends AppCompatActivity {
         nav.setOrientation(LinearLayout.HORIZONTAL);
         nav.setPadding(dp(8), dp(6), dp(8), dp(8));
         nav.setBackgroundColor(0xFF10192A);
-        navInicio = navButton("Início");
-        navHistorico = navButton("Histórico");
-        navPerfil = navButton("Perfil");
-        navInicio.setOnClickListener(v -> mostrarPagina(0));
-        navHistorico.setOnClickListener(v -> mostrarPagina(1));
-        navPerfil.setOnClickListener(v -> mostrarPagina(2));
+        navInicio = navButton("🏠\nInício");
+        navHistorico = navButton("📦\nPedidos");
+        navPerfil = navButton("⚙️\nSistema");
+        navMais = navButton("⋯\nMais");
+        navInicio.setOnClickListener(v -> { mostrarDashboardOuPagina(0); });
+        navHistorico.setOnClickListener(v -> { mostrarDashboardOuPagina(1); });
+        navPerfil.setOnClickListener(v -> { mostrarDashboardOuPagina(2); });
+        navMais.setOnClickListener(v -> abrirDashboardMain());
         nav.addView(navInicio);
         nav.addView(navHistorico);
         nav.addView(navPerfil);
+        nav.addView(navMais);
         root.addView(nav);
 
         mostrarPagina(0);
-        setContentView(root);
+        nativeRoot = root;
+        contentHost = new FrameLayout(this);
+        contentHost.setBackgroundColor(0xFF061321);
+        contentHost.addView(nativeRoot, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(contentHost);
+    }
+
+    private void mostrarDashboardOuPagina(int index) {
+        if (dashboardAberto) {
+            mostrarTransferencias();
+        }
+        mostrarPagina(index);
+    }
+
+    private void abrirDashboardMain() {
+        if (contentHost == null) return;
+        if (webUi == null) {
+            webUi = new WebView(this);
+            webUi.setBackgroundColor(0xFF050A0F);
+            WebSettings s = webUi.getSettings();
+            s.setJavaScriptEnabled(true);
+            s.setDomStorageEnabled(true);
+            s.setAllowFileAccess(true);
+            s.setMediaPlaybackRequiresUserGesture(false);
+            if (Build.VERSION.SDK_INT >= 21) s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+            webUi.setWebChromeClient(new WebChromeClient());
+            webUi.setWebViewClient(new WebViewClient());
+            webUi.addJavascriptInterface(new WebAppInterface(this), "Android");
+            webUi.loadUrl("file:///android_asset/index.html");
+            contentHost.addView(webUi, new FrameLayout.LayoutParams(-1, -1));
+        }
+        nativeRoot.setVisibility(View.GONE);
+        webUi.setVisibility(View.VISIBLE);
+        dashboardAberto = true;
+        getWindow().setStatusBarColor(0xFF071018);
+        getWindow().setNavigationBarColor(0xFF050A0F);
+        webUi.postDelayed(() -> atualizarWebUi(), 350);
+    }
+
+    public void mostrarTransferencias() {
+        runOnUiThread(() -> {
+            if (nativeRoot != null) nativeRoot.setVisibility(View.VISIBLE);
+            if (webUi != null) webUi.setVisibility(View.GONE);
+            dashboardAberto = false;
+            getWindow().setStatusBarColor(0xFF061321);
+            getWindow().setNavigationBarColor(0xFF061321);
+            mostrarPagina(0);
+        });
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (dashboardAberto) {
+            mostrarTransferencias();
+        } else if (webUi != null && webUi.canGoBack()) {
+            webUi.goBack();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     private ScrollView wrapScroll(View child) {
@@ -1159,25 +1225,7 @@ public class MainActivity extends AppCompatActivity {
     // LAYOUT WEBVIEW (index.html com drawer)
     // =========================================================
 
-    private void abrirInterfaceWeb() {
-        webUi = new WebView(this);
-        webUi.setBackgroundColor(0xFF050A0F);
-        WebSettings s = webUi.getSettings();
-        s.setJavaScriptEnabled(true);
-        s.setDomStorageEnabled(true);
-        s.setAllowFileAccess(true);
-        s.setMediaPlaybackRequiresUserGesture(false);
-        if (android.os.Build.VERSION.SDK_INT >= 21) {
-            s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        }
-        webUi.setWebChromeClient(new WebChromeClient());
-        webUi.setWebViewClient(new WebViewClient());
-        webUi.addJavascriptInterface(new WebAppInterface(this), "Android");
-        webUi.loadUrl("file:///android_asset/index.html");
-        setContentView(webUi);
-        getWindow().setStatusBarColor(0xFF071018);
-        getWindow().setNavigationBarColor(0xFF050A0F);
-    }
+    // O dashboard é criado sob demanda por abrirDashboardMain().
 
     private static String jsonStr(String s) {
         if (s == null) return "\"\"";

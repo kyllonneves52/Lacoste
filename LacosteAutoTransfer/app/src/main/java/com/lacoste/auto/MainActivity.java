@@ -363,7 +363,7 @@ public class MainActivity extends AppCompatActivity {
         dashboardAberto = true;
         getWindow().setStatusBarColor(0xFF071018);
         getWindow().setNavigationBarColor(0xFF050A0F);
-        webUi.postDelayed(() -> atualizarWebUi(), 350);
+        webUi.postDelayed(() -> actualizarWebUi(), 350);
     }
 
     public void mostrarTransferencias() {
@@ -1379,9 +1379,13 @@ public class MainActivity extends AppCompatActivity {
                 listarPedidosNaWeb();
                 Toast.makeText(this, "A actualizar pedidos…", Toast.LENGTH_SHORT).show();
                 break;
-            default:
+                        default:
                 Toast.makeText(this, "Comando: " + cmd, Toast.LENGTH_SHORT).show();
         }
     }
+
+    // Aliases pra nunca mais quebrar com c/z ou Ui/UI
+    public void atualizarWebUi() { actualizarWebUi(); }
+    public void atualizarWebUI() { actualizarWebUi(); }
 
 }

@@ -39,6 +39,9 @@ public class MainActivity extends Activity {
     TextView financeHistory;
     LinearLayout financeSection;
     ProfitChartView profitChartView;
+    TextView salesStats;
+    TextView packageStats;
+    ProfitChartView salesChartView;
     EditText receiptSearch;
     TextView receiptResult;
 
@@ -226,8 +229,8 @@ public class MainActivity extends Activity {
 
         LinearLayout salesSection = section("VENDAS E ESTATÍSTICAS");
         salesSection.addView(label("Vendas por período, pacotes mais comprados e faturação confirmada.", false));
-        TextView salesStats = label("A carregar vendas…", false); salesStats.setTextColor(TEXT); salesSection.addView(salesStats);
-        TextView packageStats = label("Pacotes mais comprados", true); salesSection.addView(packageStats);
+        salesStats = label("A carregar vendas…", false); salesStats.setTextColor(TEXT); salesSection.addView(salesStats);
+        packageStats = label("Pacotes mais comprados", true); salesSection.addView(packageStats);
         root.addView(salesSection);
 
         LinearLayout searchSection = section("PESQUISAR COMPROVATIVO");
@@ -238,7 +241,7 @@ public class MainActivity extends Activity {
         root.addView(searchSection);
         searchReceipt.setOnClickListener(v -> pesquisarComprovativo());
 
-        ProfitChartView salesChartView = new ProfitChartView(this);
+        salesChartView = new ProfitChartView(this);
         salesChartView.setTitle("Vendas concluídas (30 dias)");
         salesSection.addView(salesChartView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(180)));
         refreshFinance.setOnClickListener(v -> carregarFinanceiro());

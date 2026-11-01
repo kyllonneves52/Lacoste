@@ -649,4 +649,20 @@ public class ApiClient {
         }).start();
     }
 
+    /** Envia resultado de comando remoto (FCM DEVICE_COMMAND) para o painel. */
+    public static void reportCommandResult(final Context ctx, final JSONObject body) {
+        final String base = Prefs.getUrlPainel(ctx);
+        final String token = Prefs.getToken(ctx);
+        if (base == null || base.isEmpty() || body == null) return;
+        new Thread(() -> {
+            try {
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                headers.put("Content-Type", "application/json");
+                headers.put("X-Android-Id", obterAndroidId(ctx));
+                if (token != null && !token.isEmpty()) headers.put("X-App-Token", token);
+                postJson(base + "/api/autosistema/dispositivo/command-result", body, headers);
+            } catch (Exception ignored) {}
+        }).start();
+    }
+
 }

@@ -166,18 +166,20 @@ label{font-size:12px;color:var(--mu)}
       <!-- ASSOCIAR -->
       <div class="page" id="p-associar">
         <div class="card qr-box">
-          <h3 style="text-align:left">Associar Dispositivo</h3>
-          <p class="note">Usa o código abaixo para associar o dispositivo ao grupo autorizado.</p>
+          <h3 style="text-align:left">🔗 Conectar Bot</h3>
+          <p class="note">No grupo do WhatsApp (admin) envia:<br><b>.conectarbot CODIGO</b></p>
+          <img id="qrImg" alt="QR" style="width:180px;height:180px;background:#fff;border-radius:12px;margin:12px auto;display:block;object-fit:contain"/>
           <div class="codigo" id="codAssoc">LC-————</div>
           <button class="btn g" onclick="copiarCodigo()">📋 Copiar Código</button>
-          <div class="note">✅ Use o mesmo número do WhatsApp<br>✅ Mantenha o bot online</div>
+          <div class="note">Ou: <b>.conectarbot ANDROID_ID</b><br>✅ Bot online · ✅ App registado</div>
         </div>
         <div class="card">
-          <h3>Código de pareamento do bot</h3>
-          <label>Número (258…)</label><input id="numPair" placeholder="25884…"/>
+          <h3>Pedir código ao servidor</h3>
+          <label>Número (opcional)</label><input id="numPair" placeholder="25884…"/>
           <button class="btn ghost" onclick="pedirCodigoBot()">Pedir / actualizar código</button>
           <div class="codigo" id="codBot">—</div>
           <button class="btn g" onclick="copiarBot()">📋 Copiar código do bot</button>
+          <div class="note">Depois no grupo: <b>.conectarbot</b> + código acima</div>
         </div>
       </div>
       <!-- LIMITES -->
@@ -253,6 +255,8 @@ function pedirCodigoBot(){
   try{ Android.pedirCodigoBot(n); }catch(e){ document.getElementById('codBot').textContent='Use .conectar no bot'; }
 }
 function setCodigoBot(c){ document.getElementById('codBot').textContent=c||'—'; }
+function setQrImage(dataUrl){ var el=document.getElementById('qrImg'); if(el&&dataUrl){ el.src=dataUrl; el.style.display='block'; } }
+function setCodigoAssoc(c){ window.codAssoc=c||''; var el=document.getElementById('codAssoc'); if(el) el.textContent=c||'—'; }
 
 function enviarManual(){
   const mb=document.getElementById('mb').value, num=document.getElementById('num').value;

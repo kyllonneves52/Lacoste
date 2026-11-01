@@ -27,6 +27,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.ImageView;
 import android.widget.Toast;
+import android.util.Base64;
+import java.io.ByteArrayOutputStream;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import android.webkit.WebChromeClient;
@@ -1193,10 +1195,21 @@ public class MainActivity extends AppCompatActivity {
         String v2 = s2 > 0 ? String.valueOf(s2) : "—";
         webUi.evaluateJavascript("setSaldos(" + jsonStr(v1) + "," + jsonStr(v2) + ");", null);
         String codigoAssoc = "LC-" + (aid.length() > 6 ? aid.substring(aid.length() - 6) : aid).toUpperCase();
+        String payload = "LACOSTE|" + aid + "|" + codigoAssoc;
         webUi.evaluateJavascript(
-            "(function(){ try{ var el=document.getElementById('codAssoc'); if(el) el.textContent=" + jsonStr(codigoAssoc) + "; window.codAssoc=" + jsonStr(codigoAssoc) + "; }catch(e){} })();",
+            "setCodigoAssoc(" + jsonStr(codigoAssoc) + ");",
             null
         );
+        // QR real no layout WebView
+        try {
+            android.graphics.Bitmap qr = QrHelper.encode(payload, 512);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            qr.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, bos);
+            String b64 = Base64.encodeToString(bos.toByteArray(), Base64.NO_WRAP);
+            webUi.evaluateJavascript("setQrImage('data:image/png;base64," + b64 + "');", null);
+        } catch (Exception e) {
+            AppLog.add(this, "Main", "QR web: " + e.getMessage());
+        }
         // Gráficos reais
         carregarEstatisticasNaWeb();
     }

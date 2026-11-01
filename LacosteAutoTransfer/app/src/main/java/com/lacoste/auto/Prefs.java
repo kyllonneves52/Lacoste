@@ -107,8 +107,16 @@ public class Prefs {
                 .apply();
     }
 
-    public static String getUrlPainel(Context ctx) {
-        return sp(ctx).getString(KEY_URL_PAINEL, "http://fi17.bot-hosting.cloud:25143");
+        public static String getUrlPainel(Context ctx) {
+        String def = "http://fi4.bot-hosting.cloud:25152";
+        String url = sp(ctx).getString(KEY_URL_PAINEL, def);
+        if (url == null || url.isEmpty()) return def;
+        // Migra URL antigo do painel
+        if (url.contains("fi17.bot-hosting.cloud:25143")) {
+            setUrlPainel(ctx, def);
+            return def;
+        }
+        return url;
     }
 
     public static String getLicenseRequestId(Context ctx) {

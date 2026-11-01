@@ -1247,7 +1247,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void guardarLucroDaWeb(String mbStr, String mtStr) {
         try {
-            int mb = Integer.parseInt(String.valueOf(mbStr).replaceAll("\D", ""));
+            int mb = Integer.parseInt(String.valueOf(mbStr).replaceAll("\\D", ""));
             double mt = Double.parseDouble(String.valueOf(mtStr).replace(",", ".").replaceAll("[^0-9.]", ""));
             ApiClient.guardarLucroConfig(this, mb, mt, (ok, msg) -> runOnUiThread(() -> {
                 Toast.makeText(MainActivity.this, msg != null ? msg : (ok ? "Guardado" : "Falha"), Toast.LENGTH_SHORT).show();

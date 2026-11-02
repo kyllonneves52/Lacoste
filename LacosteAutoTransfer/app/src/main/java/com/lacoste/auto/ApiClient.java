@@ -529,6 +529,16 @@ public class ApiClient {
         void onErro(String mensagem);
     }
 
+    private static java.util.Map<String, String> headersPareamento(Context ctx) {
+        java.util.Map<String, String> headers = new java.util.HashMap<>();
+        headers.put("Content-Type", "application/json");
+        headers.put("X-Android-Id", obterAndroidId(ctx));
+        String token = Prefs.getToken(ctx);
+        if (token != null && !token.isEmpty()) headers.put("X-App-Token", token);
+        return headers;
+    }
+
+    /** Pede ao servidor (que avisa o bot) um código de pareamento para o número. */
     public static void pedirCodigoPareamento(final Context ctx, final String numero, final PairingCallback cb) {
         final String base = Prefs.getUrlPainel(ctx);
         if (base == null || base.isEmpty()) {
@@ -540,27 +550,27 @@ public class ApiClient {
                 JSONObject body = new JSONObject();
                 body.put("numero", numero);
                 body.put("androidId", obterAndroidId(ctx));
-                java.util.Map<String, String> headers = new java.util.HashMap<>();
-                headers.put("Content-Type", "application/json");
-                headers.put("X-Android-Id", obterAndroidId(ctx));
-                JSONObject resp = postJson(base + "/api/app/pairing/pedir", body, headers);
+                JSONObject resp = postJson(base + "/api/app/pairing/pedir", body, headersPareamento(ctx));
                 if (resp == null) {
-                    if (cb != null) cb.onErro("Sem resposta.");
+                    if (cb != null) cb.onErro("Sem resposta do servidor.");
                     return;
                 }
-                if (resp.optBoolean("ok") && resp.optString("codigo", "").length() > 0) {
-                    if (cb != null) cb.onCodigo(resp.optString("codigo"), resp.optString("numero", numero), resp.optString("sessao", ""));
-                } else if (resp.optBoolean("ok")) {
-                    if (cb != null) cb.onAguardando(resp.optString("message", "Aguardando .conectar no bot"));
+                if (resp.optBoolean("ok")) {
+                    if (cb != null) cb.onAguardando(resp.optString("message", "Pedido enviado ao bot…"));
                 } else {
-                    if (cb != null) cb.onErro(resp.optString("message", "Falha"));
+                    if (cb != null) cb.onErro(resp.optString("message", "Falha ao pedir código."));
                 }
             } catch (Exception e) {
-                if (cb != null) cb.onErro(e.getMessage());
+                if (cb != null) cb.onErro("Sem ligação ao servidor: " + e.getMessage());
             }
         }).start();
     }
 
+    /**
+     * Consulta o estado do último pedido. Chamado a cada 1s pelo app.
+     * onCodigo = pronto | onAguardando = continua a consultar (inclui falhas de rede passageiras)
+     * onErro = terminou sem código (o bot falhou / expirou).
+     */
     public static void consultarCodigoPareamento(final Context ctx, final String numero, final PairingCallback cb) {
         final String base = Prefs.getUrlPainel(ctx);
         if (base == null || base.isEmpty()) {
@@ -570,22 +580,26 @@ public class ApiClient {
         new Thread(() -> {
             try {
                 JSONObject body = new JSONObject();
-                if (numero != null) body.put("numero", numero);
                 body.put("androidId", obterAndroidId(ctx));
-                java.util.Map<String, String> headers = new java.util.HashMap<>();
-                headers.put("Content-Type", "application/json");
-                JSONObject resp = postJson(base + "/api/app/pairing/codigo", body, headers);
+                JSONObject resp = postJson(base + "/api/app/pairing/codigo", body, headersPareamento(ctx));
                 if (resp == null) {
-                    if (cb != null) cb.onErro("Sem resposta.");
+                    if (cb != null) cb.onAguardando("A tentar de novo…");
                     return;
                 }
+                String status = resp.optString("status", "");
                 if (resp.optBoolean("disponivel") && resp.optString("codigo", "").length() > 0) {
-                    if (cb != null) cb.onCodigo(resp.optString("codigo"), resp.optString("numero", ""), resp.optString("sessao", ""));
+                    if (cb != null) cb.onCodigo(resp.optString("codigo"), resp.optString("numero", numero), resp.optString("sessao", ""));
+                } else if ("error".equals(status)) {
+                    if (cb != null) cb.onErro(resp.optString("message", "O bot não conseguiu gerar o código."));
+                } else if (!resp.optBoolean("ok", true)) {
+                    // 403/404/429...: erro definitivo do servidor
+                    if (cb != null) cb.onErro(resp.optString("message", "Falha ao consultar o código."));
                 } else {
-                    if (cb != null) cb.onAguardando(resp.optString("message", "Ainda sem código"));
+                    if (cb != null) cb.onAguardando(resp.optString("message", "Bot a gerar o código…"));
                 }
             } catch (Exception e) {
-                if (cb != null) cb.onErro(e.getMessage());
+                // falha de rede passageira: o app tenta outra vez no próximo segundo
+                if (cb != null) cb.onAguardando("Sem ligação, a tentar de novo…");
             }
         }).start();
     }

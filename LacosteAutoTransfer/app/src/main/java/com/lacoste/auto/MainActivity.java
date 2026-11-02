@@ -776,102 +776,86 @@ public class MainActivity extends AppCompatActivity {
         licencaPerfil = text(LicenseManager.tempoRestante(this), 20);
         licencaPerfil.setTextColor(0xFF22C55E);
         box.addView(licencaPerfil);
-        TextView id = text("ID: " + ApiClient.obterAndroidId(this), 12);
+        final String aidPerfil = ApiClient.obterAndroidId(this);
+        LinearLayout idRow = new LinearLayout(this);
+        idRow.setOrientation(LinearLayout.HORIZONTAL);
+        idRow.setGravity(Gravity.CENTER_VERTICAL);
+        TextView id = text("ID: " + aidPerfil, 12);
         id.setTextColor(0xFF94A3B8);
-        box.addView(id);
+        idRow.addView(id, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        TextView copiarId = text("📋 Copiar", 11);
+        copiarId.setTextColor(0xFFE5E9F0);
+        copiarId.setBackground(round(0xFF1E2838, 8));
+        copiarId.setPadding(dp(8), dp(5), dp(8), dp(5));
+        copiarId.setOnClickListener(v -> copiarParaClipboard(aidPerfil));
+        idRow.addView(copiarId, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        box.addView(idRow);
         TextView modelo = text(Build.MANUFACTURER + " " + Build.MODEL, 12);
         modelo.setTextColor(0xFF94A3B8);
         box.addView(modelo);
         content.addView(box);
 
-        // ===== CONECTAR BOT — QR + código de associação =====
-        LinearLayout assoc = card("Conectar Bot (QR + código)");
-        TextView assocDica = text("Aponta a câmara ou digita o código no WhatsApp / bot. O mesmo código serve para pareamento.", 12);
-        assocDica.setTextColor(0xFF94A3B8);
-        assoc.addView(assocDica);
-
-        String aid = ApiClient.obterAndroidId(this);
-        final String codigoAssoc = "LC-" + (aid.length() > 6 ? aid.substring(aid.length() - 6) : aid).toUpperCase()
-                + "-" + String.valueOf(System.currentTimeMillis() % 10000);
-
-        ImageView qrImg = new ImageView(this);
-        int qrSize = dp(200);
-        try {
-            android.graphics.Bitmap qrBmp = QrHelper.encode("LACOSTE|" + aid + "|" + codigoAssoc, qrSize);
-            qrImg.setImageBitmap(qrBmp);
-        } catch (Exception e) {
-            qrImg.setBackgroundColor(0xFFFFFFFF);
-        }
-        LinearLayout.LayoutParams qlp = new LinearLayout.LayoutParams(qrSize, qrSize);
-        qlp.gravity = Gravity.CENTER_HORIZONTAL;
-        qlp.topMargin = dp(8);
-        qlp.bottomMargin = dp(8);
-        qrImg.setLayoutParams(qlp);
-        assoc.addView(qrImg);
-
-        TextView codTv = text(codigoAssoc, 16);
-        codTv.setTextColor(0xFF22C55E);
-        codTv.setGravity(Gravity.CENTER);
-        assoc.addView(codTv);
-
-        Button copiarCod = button("📋 Copiar código");
-        copiarCod.setOnClickListener(v -> copiarParaClipboard(codigoAssoc));
-        assoc.addView(copiarCod);
-        content.addView(assoc);
-
-        // ===== Pedir código gerado pelo bot =====
-        LinearLayout pair = card("Código gerado pelo bot");
-        TextView dicaPair = text("Pede um código ao bot. Depois no grupo usa: .conectarbot CODIGO", 12);
+        // ===== CONECTAR BOT — pede o código ao bot e só copias =====
+        LinearLayout pair = card("Conectar Bot");
+        TextView dicaPair = text("1. Escreve o número de WhatsApp que vai ser o bot\n2. Toca em Pedir código\n3. Copia o código assim que aparecer\n4. No WhatsApp: Aparelhos conectados › Conectar aparelho › Conectar com número de telefone › cola o código", 12);
         dicaPair.setTextColor(0xFF94A3B8);
         pair.addView(dicaPair);
 
-        final EditText numPair = input("Número WhatsApp (opcional)");
+        final EditText numPair = input("Número do bot (ex: 258841234567)");
         numPair.setInputType(InputType.TYPE_CLASS_PHONE);
         pair.addView(numPair);
 
-        final TextView codigoView = text("Ainda sem código", 14);
-        codigoView.setTextColor(0xFF94A3B8);
+        final TextView codigoView = text("—", 24);
+        codigoView.setTextColor(0xFF22C55E);
+        codigoView.setGravity(Gravity.CENTER);
+        codigoView.setPadding(dp(8), dp(12), dp(8), dp(4));
         pair.addView(codigoView);
+
+        final TextView estadoView = text("", 12);
+        estadoView.setTextColor(0xFF94A3B8);
+        estadoView.setGravity(Gravity.CENTER);
+        pair.addView(estadoView);
 
         final String[] ultimoCodigo = {""};
 
         Button btnPedir = button("Pedir código ao bot");
         btnPedir.setOnClickListener(v -> {
-            String numFinal = numPair.getText() != null ? numPair.getText().toString().replaceAll("\\D", "") : "";
-            codigoView.setText("A pedir…");
-            pedirCodigoBotDaWeb(numFinal);
-            // Atualiza o label após alguns segundos
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                ApiClient.consultarCodigoPareamento(this, numFinal, new ApiClient.PairingCallback() {
-                    @Override public void onCodigo(String codigo, String numero, String sessao) {
-                        runOnUiThread(() -> {
-                            ultimoCodigo[0] = codigo;
-                            codigoView.setText("Código: " + codigo);
-                            codigoView.setTextColor(0xFF22C55E);
-                        });
-                    }
-                    @Override public void onAguardando(String mensagem) {
-                        runOnUiThread(() -> codigoView.setText(mensagem));
-                    }
-                    @Override public void onErro(String mensagem) {
-                        runOnUiThread(() -> {
-                            codigoView.setText("Erro: " + mensagem);
-                            codigoView.setTextColor(0xFFEF4444);
-                        });
-                    }
-                });
-            }, 4000);
+            String num = normalizarNumeroMz(numPair.getText() != null ? numPair.getText().toString() : "");
+            if (num.isEmpty()) {
+                estadoView.setTextColor(0xFFEF4444);
+                estadoView.setText("Número inválido. Usa o formato 258841234567.");
+                return;
+            }
+            ultimoCodigo[0] = "";
+            codigoView.setText("—");
+            iniciarPareamento(num, (estado, codigo, msg) -> {
+                if ("pronto".equals(estado)) {
+                    ultimoCodigo[0] = codigo;
+                    codigoView.setText(codigo);
+                    estadoView.setTextColor(0xFF22C55E);
+                    estadoView.setText("✅ Código pronto. Copia e cola no WhatsApp (expira em ~2 min).");
+                } else if ("erro".equals(estado)) {
+                    codigoView.setText("—");
+                    estadoView.setTextColor(0xFFEF4444);
+                    estadoView.setText("❌ " + msg);
+                } else {
+                    estadoView.setTextColor(0xFF94A3B8);
+                    estadoView.setText("⏳ " + msg);
+                }
+            });
         });
         pair.addView(btnPedir);
 
-        Button btnCopiar = button("📋 Copiar último código");
-        btnCopiar.setOnClickListener(v -> {
+        final View.OnClickListener copiarCodigoListener = v -> {
             if (ultimoCodigo[0] == null || ultimoCodigo[0].isEmpty()) {
                 Toast.makeText(this, "Ainda não há código", Toast.LENGTH_SHORT).show();
                 return;
             }
-            copiarParaClipboard(ultimoCodigo[0]);
-        });
+            copiarParaClipboard(ultimoCodigo[0].replace("-", ""));
+        };
+        codigoView.setOnClickListener(copiarCodigoListener);
+        Button btnCopiar = button("📋 Copiar código");
+        btnCopiar.setOnClickListener(copiarCodigoListener);
         pair.addView(btnCopiar);
         content.addView(pair);
 
@@ -1167,58 +1151,82 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void mostrarCodigoBotNaWeb(String codigo) {
-        if (codigo == null || codigo.isEmpty()) return;
-        runOnUiThread(() -> {
-            new AlertDialog.Builder(this)
-                    .setTitle("Código do bot")
-                    .setMessage(codigo)
-                    .setPositiveButton("Copiar", (d, w) -> copiarParaClipboard(codigo))
-                    .setNegativeButton("Fechar", null)
-                    .show();
+    // =========================================================
+    // PAREAMENTO DO BOT (App -> API -> Bot -> API -> App)
+    // O app pede o código, o bot gera e o app consulta a cada 1s.
+    // =========================================================
+
+    private interface PareamentoUi {
+        /** estado: "aguardando" | "pronto" | "erro". Sempre chamado na thread da UI. */
+        void onEstado(String estado, String codigo, String msg);
+    }
+
+    private static final long PAREAMENTO_TIMEOUT_MS = 130000L;
+    private final Handler pairHandler = new Handler(Looper.getMainLooper());
+    private int pareamentoGen = 0;
+
+    /** Aceita 841234567 ou 258841234567. Devolve "" se inválido. */
+    private static String normalizarNumeroMz(String raw) {
+        String n = raw == null ? "" : raw.replaceAll("\\D", "");
+        if (n.length() == 9 && n.matches("^8[2-7].*")) n = "258" + n;
+        return (n.startsWith("258") && n.length() == 12) ? n : "";
+    }
+
+    private void iniciarPareamento(final String numero, final PareamentoUi ui) {
+        final int gen = ++pareamentoGen;
+        final long inicio = System.currentTimeMillis();
+        pairHandler.removeCallbacksAndMessages(null);
+        ui.onEstado("aguardando", "", "A pedir código ao bot…");
+        ApiClient.pedirCodigoPareamento(this, numero, new ApiClient.PairingCallback() {
+            @Override public void onCodigo(String c, String n, String s) { entregarPareamento(gen, ui, "pronto", c, ""); }
+            @Override public void onAguardando(String m) {
+                runOnUiThread(() -> {
+                    if (gen != pareamentoGen) return;
+                    ui.onEstado("aguardando", "", "Pedido enviado. O bot está a gerar o código…");
+                    pairHandler.postDelayed(() -> consultarPareamento(gen, inicio, numero, ui), 1000);
+                });
+            }
+            @Override public void onErro(String m) { entregarPareamento(gen, ui, "erro", "", m); }
         });
     }
 
-    public void pedirCodigoBotDaWeb(String numero) {
-        final String num = numero == null ? "" : numero.replaceAll("\\D", "");
-        Toast.makeText(this, "A pedir código ao bot…", Toast.LENGTH_SHORT).show();
-        ApiClient.pedirCodigoPareamento(this, num, new ApiClient.PairingCallback() {
-            @Override public void onCodigo(String codigo, String n, String sessao) {
+    private void consultarPareamento(final int gen, final long inicio, final String numero, final PareamentoUi ui) {
+        if (gen != pareamentoGen) return;
+        if (System.currentTimeMillis() - inicio > PAREAMENTO_TIMEOUT_MS) {
+            ui.onEstado("erro", "", "Tempo esgotado. Confirma que o bot está online e pede de novo.");
+            return;
+        }
+        ApiClient.consultarCodigoPareamento(this, numero, new ApiClient.PairingCallback() {
+            @Override public void onCodigo(String c, String n, String s) { entregarPareamento(gen, ui, "pronto", c, ""); }
+            @Override public void onAguardando(String m) {
                 runOnUiThread(() -> {
-                    if (webUi != null) webUi.evaluateJavascript("setCodigoBot(" + jsonStr(codigo) + ");", null);
-                    mostrarCodigoBotNaWeb(codigo);
-                    Toast.makeText(MainActivity.this, "Código pronto", Toast.LENGTH_SHORT).show();
+                    if (gen != pareamentoGen) return;
+                    ui.onEstado("aguardando", "", m);
+                    pairHandler.postDelayed(() -> consultarPareamento(gen, inicio, numero, ui), 1000); // 1s
                 });
             }
-            @Override public void onAguardando(String mensagem) {
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, mensagem + " (bot a gerar…)", Toast.LENGTH_LONG).show());
-                for (int i = 1; i <= 6; i++) {
-                    final int attempt = i;
-                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                        ApiClient.consultarCodigoPareamento(MainActivity.this, num, new ApiClient.PairingCallback() {
-                            @Override public void onCodigo(String codigo, String n, String sessao) {
-                                runOnUiThread(() -> {
-                                    if (webUi != null) webUi.evaluateJavascript("setCodigoBot(" + jsonStr(codigo) + ");", null);
-                                    mostrarCodigoBotNaWeb(codigo);
-                                    Toast.makeText(MainActivity.this, "Código pronto", Toast.LENGTH_SHORT).show();
-                                });
-                            }
-                            @Override public void onAguardando(String m) {
-                                if (attempt == 6) {
-                                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Ainda sem código. Confirma que o bot está online.", Toast.LENGTH_LONG).show());
-                                }
-                            }
-                            @Override public void onErro(String e) {
-                                if (attempt == 6) runOnUiThread(() -> Toast.makeText(MainActivity.this, e, Toast.LENGTH_SHORT).show());
-                            }
-                        });
-                    }, attempt * 4000L);
-                }
-            }
-            @Override public void onErro(String mensagem) {
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, mensagem, Toast.LENGTH_LONG).show());
-            }
+            @Override public void onErro(String m) { entregarPareamento(gen, ui, "erro", "", m); }
         });
+    }
+
+    private void entregarPareamento(final int gen, final PareamentoUi ui, final String estado, final String codigo, final String msg) {
+        runOnUiThread(() -> { if (gen == pareamentoGen) ui.onEstado(estado, codigo, msg); });
+    }
+
+    private void jsPareamento(String estado, String codigo, String msg) {
+        if (webUi != null) {
+            webUi.evaluateJavascript("setPareamento(" + jsonStr(estado) + "," + jsonStr(codigo) + "," + jsonStr(msg) + ");", null);
+        }
+    }
+
+    /** Chamado pela página "Associar Dispositivo" (WebView). */
+    public void pedirCodigoBotDaWeb(String numero) {
+        final String num = normalizarNumeroMz(numero);
+        if (num.isEmpty()) {
+            jsPareamento("erro", "", "Número inválido. Usa o formato 258841234567.");
+            return;
+        }
+        iniciarPareamento(num, (estado, codigo, msg) -> jsPareamento(estado, codigo, msg));
     }
 
     // =========================================================
@@ -1242,22 +1250,6 @@ public class MainActivity extends AppCompatActivity {
         String v1 = s1 > 0 ? String.valueOf(s1) : "—";
         String v2 = s2 > 0 ? String.valueOf(s2) : "—";
         webUi.evaluateJavascript("setSaldos(" + jsonStr(v1) + "," + jsonStr(v2) + ");", null);
-        String codigoAssoc = "LC-" + (aid.length() > 6 ? aid.substring(aid.length() - 6) : aid).toUpperCase();
-        String payload = "LACOSTE|" + aid + "|" + codigoAssoc;
-        webUi.evaluateJavascript(
-            "setCodigoAssoc(" + jsonStr(codigoAssoc) + ");",
-            null
-        );
-        // QR real no layout WebView
-        try {
-            android.graphics.Bitmap qr = QrHelper.encode(payload, 512);
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            qr.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, bos);
-            String b64 = Base64.encodeToString(bos.toByteArray(), Base64.NO_WRAP);
-            webUi.evaluateJavascript("setQrImage('data:image/png;base64," + b64 + "');", null);
-        } catch (Exception e) {
-            AppLog.add(this, "Main", "QR web: " + e.getMessage());
-        }
         // Gráficos reais
         carregarEstatisticasNaWeb();
     }

@@ -1,0 +1,21 @@
+SISTEMA DE CÓDIGO PARA CONECTAR BOT (App -> API -> Bot -> API -> App)
+
+Cada pasta tem SÓ os ficheiros alterados, com a mesma estrutura do teu projeto.
+Copia por cima dos originais:
+
+1) API_hosting/  -> raiz do Lacoste hosting (Bot-Hosting da API). Reinicia a API.
+   Novos: lib/pairing.js, lib/routes/bot/pairing/pendentes.js, resultado.js
+   Alterados: lib/routes/app/pairing/pedir.js, codigo.js, api/[...path].js, sql/schema.sql
+   A tabela pairing_requests é criada sozinha (não precisas de correr SQL).
+
+2) Bot_src/      -> pasta src do bot. Reinicia o bot.
+   Novo: pairingApp.js | Alterados: index.js, sistemaVendas.js (já inclui a correção do http://)
+
+3) App_Android/  -> projeto LacosteAutoTransfer (compilar o APK de novo).
+   Alterados: ApiClient.java, MainActivity.java, assets/index.html
+
+FLUXO
+ App: número + "Pedir código" -> POST /api/app/pairing/pedir (fica 'pending')
+ Bot: consulta POST /api/bot/pairing/pendentes a cada 1s, gera o código (Baileys) e
+      envia POST /api/bot/pairing/resultado
+ App: consulta POST /api/app/pairing/codigo a cada 1s e mostra o código para copiar.

@@ -73,7 +73,13 @@ body{font-family:-apple-system,Roboto,'Segoe UI',sans-serif;background:var(--bg)
 .qr-box{text-align:center;padding:12px}
 .qr-box canvas,.qr-box img{width:200px;height:200px;background:#fff;border-radius:12px;margin:12px auto;display:block}
 .codigo{font-size:20px;font-weight:700;color:var(--g);letter-spacing:1px;margin:8px 0}
+.codigo.big{font-size:30px;text-align:center;letter-spacing:4px;margin:16px 0 4px;min-height:38px;user-select:all}
 .note{font-size:12px;color:var(--mu);text-align:left;margin-top:10px;line-height:1.5}
+.idrow{display:flex;align-items:center;gap:8px}
+.cpid{background:var(--card2);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:3px 8px;font-size:12px;cursor:pointer;flex-shrink:0}
+.cpid:active{background:rgba(34,197,94,.2)}
+ol.dicas{margin:6px 0 0 18px;font-size:12px;color:var(--mu);line-height:1.7;text-align:left}
+ol.dicas b{color:var(--tx)}
 /* LIMITES */
 .stack .btn{margin-top:8px}
 /* BOTTOM NAV */
@@ -90,7 +96,7 @@ label{font-size:12px;color:var(--mu)}
 <div class="app">
   <aside class="drawer" id="drawer">
     <div class="brand"><div class="croc">🐊</div><div><h1>LACOSTE AUTO</h1><div class="sub">Transferência de megas</div></div></div>
-    <div class="gestor"><div class="av">👤</div><div><div id="gestorNome">Gestor Lacoste</div><small id="gestorId">ID: —</small></div></div>
+    <div class="gestor"><div class="av">👤</div><div><div id="gestorNome">Gestor Lacoste</div><div class="idrow"><small id="gestorId">ID: —</small><button class="cpid" onclick="copiarId()" aria-label="Copiar ID">📋</button></div></div></div>
     <div class="nav-item on" data-page="inicio" onclick="go('inicio')"><span class="ic">🏠</span> Início</div>
     <div class="nav-item" data-page="painel" onclick="go('painel')"><span class="ic">📊</span> Meu Painel</div>
     <div class="nav-item" data-page="pedidos" onclick="go('pedidos')"><span class="ic">📦</span> Pedidos</div>
@@ -165,21 +171,24 @@ label{font-size:12px;color:var(--mu)}
       </div>
       <!-- ASSOCIAR -->
       <div class="page" id="p-associar">
-        <div class="card qr-box">
-          <h3 style="text-align:left">🔗 Conectar Bot</h3>
-          <p class="note">No grupo do WhatsApp (admin) envia:<br><b>.conectarbot CODIGO</b></p>
-          <img id="qrImg" alt="QR" style="width:180px;height:180px;background:#fff;border-radius:12px;margin:12px auto;display:block;object-fit:contain"/>
-          <div class="codigo" id="codAssoc">LC-————</div>
-          <button class="btn g" onclick="copiarCodigo()">📋 Copiar Código</button>
-          <div class="note">Ou: <b>.conectarbot ANDROID_ID</b><br>✅ Bot online · ✅ App registado</div>
+        <div class="card">
+          <h3>🔗 Conectar Bot</h3>
+          <label>Número do WhatsApp do bot</label>
+          <input id="numPair" type="tel" inputmode="numeric" placeholder="258841234567"/>
+          <button class="btn g" onclick="pedirCodigoBot()">Pedir código ao bot</button>
+          <div class="codigo big" id="codBot" onclick="copiarBot()">—</div>
+          <div class="note" id="estadoBot" style="text-align:center">Escreve o número e pede o código.</div>
+          <button class="btn ghost" id="btnCopiarBot" onclick="copiarBot()" disabled>📋 Copiar código</button>
         </div>
         <div class="card">
-          <h3>Pedir código ao servidor</h3>
-          <label>Número (opcional)</label><input id="numPair" placeholder="25884…"/>
-          <button class="btn ghost" onclick="pedirCodigoBot()">Pedir / actualizar código</button>
-          <div class="codigo" id="codBot">—</div>
-          <button class="btn g" onclick="copiarBot()">📋 Copiar código do bot</button>
-          <div class="note">Depois no grupo: <b>.conectarbot</b> + código acima</div>
+          <h3>Como conectar</h3>
+          <ol class="dicas">
+            <li>Escreve o número do WhatsApp que vai ser o bot e toca em <b>Pedir código ao bot</b>.</li>
+            <li>Aguarda uns segundos: o código aparece aqui sozinho.</li>
+            <li>Toca em <b>Copiar código</b>.</li>
+            <li>No WhatsApp desse número: <b>Aparelhos conectados › Conectar aparelho › Conectar com número de telefone</b>.</li>
+            <li>Cola o código. O código expira em cerca de 2 minutos; se expirar, pede outro.</li>
+          </ol>
         </div>
       </div>
       <!-- LIMITES -->
@@ -208,7 +217,7 @@ label{font-size:12px;color:var(--mu)}
         <div class="card">
           <h3>Licença</h3>
           <div class="val" id="licText" style="color:var(--g);font-size:22px;font-weight:700">—</div>
-          <div class="note" id="androidId">ID: —</div>
+          <div class="idrow" style="margin-top:10px"><div class="note" id="androidId" style="margin:0;flex:1;word-break:break-all">ID: —</div><button class="cpid" onclick="copiarId()">📋 Copiar</button></div>
         </div>
       </div>
     </div>
@@ -221,7 +230,6 @@ label{font-size:12px;color:var(--mu)}
   </div>
 </div>
 <script>
-/* QR minimal: draw modules via API from Android or simple placeholder pattern */
 function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('scrim').classList.add('on')}
 function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('scrim').classList.remove('on')}
 function go(id){
@@ -245,18 +253,34 @@ bars(document.getElementById('chart7'),[]);
 bars(document.getElementById('chart7b'),[]);
 /* pedidosHoje real via stats */
 
-let codAssoc='LC-'+Date.now().toString().slice(-8);
-document.getElementById('codAssoc').textContent=codAssoc;
+var androidIdAtual='';
+function copiarTexto(t){ try{ Android.copiarTexto(t); }catch(e){ try{ navigator.clipboard.writeText(t); }catch(_){} } }
+function copiarId(){ if(androidIdAtual) copiarTexto(androidIdAtual); }
 
-function copiarCodigo(){ try{ Android.copiarTexto(codAssoc); }catch(e){ navigator.clipboard&&navigator.clipboard.writeText(codAssoc); } alert('Código copiado'); }
-function copiarBot(){ const t=document.getElementById('codBot').textContent; try{ Android.copiarTexto(t); }catch(e){} }
+/* Pareamento: o app pede, o bot gera, o Android consulta a API a cada 1s e chama setPareamento */
 function pedirCodigoBot(){
-  const n=document.getElementById('numPair').value;
-  try{ Android.pedirCodigoBot(n); }catch(e){ document.getElementById('codBot').textContent='Use .conectar no bot'; }
+  var n=document.getElementById('numPair').value;
+  setPareamento('aguardando','','A pedir código ao bot…');
+  try{ Android.pedirCodigoBot(n); }catch(e){ setPareamento('erro','','Esta função só funciona dentro do app.'); }
 }
-function setCodigoBot(c){ document.getElementById('codBot').textContent=c||'—'; }
-function setQrImage(dataUrl){ var el=document.getElementById('qrImg'); if(el&&dataUrl){ el.src=dataUrl; el.style.display='block'; } }
-function setCodigoAssoc(c){ window.codAssoc=c||''; var el=document.getElementById('codAssoc'); if(el) el.textContent=c||'—'; }
+function setPareamento(estado,codigo,msg){
+  var cod=document.getElementById('codBot'), st=document.getElementById('estadoBot'), cp=document.getElementById('btnCopiarBot');
+  if(estado==='pronto'){
+    cod.textContent=codigo; cp.disabled=false;
+    st.style.color='var(--g)'; st.textContent='✅ Código pronto. Copia e cola no WhatsApp (expira em ~2 min).';
+  } else if(estado==='erro'){
+    cod.textContent='—'; cp.disabled=true;
+    st.style.color='var(--red)'; st.textContent='❌ '+(msg||'Falha ao gerar o código.');
+  } else {
+    cod.textContent='—'; cp.disabled=true;
+    st.style.color='var(--mu)'; st.textContent='⏳ '+(msg||'A aguardar o bot…');
+  }
+}
+function copiarBot(){
+  var t=(document.getElementById('codBot').textContent||'').trim();
+  if(!/^[A-Za-z0-9-]{8,}$/.test(t)) return;
+  copiarTexto(t.replace(/-/g,''));
+}
 
 function enviarManual(){
   const mb=document.getElementById('mb').value, num=document.getElementById('num').value;
@@ -331,7 +355,7 @@ function filtroPed(tipo,btn){
 }
 
 function setSaldos(s1,s2){ document.getElementById('sim1').textContent=(s1||'—')+' MB'; document.getElementById('sim2').textContent=(s2||'—')+' MB'; }
-function setLicenca(t,id){ document.getElementById('licText').textContent=t||'—'; document.getElementById('androidId').textContent='ID: '+(id||'—'); document.getElementById('gestorId').textContent='ID: '+(id||'—'); }
+function setLicenca(t,id){ androidIdAtual=id||''; document.getElementById('licText').textContent=t||'—'; document.getElementById('androidId').textContent='ID: '+(id||'—'); document.getElementById('gestorId').textContent='ID: '+(id||'—'); }
 function setLucros(hoje, serie){
   if(hoje!=null) document.getElementById('lucroHoje').textContent=(Math.round(hoje*100)/100)+' MT';
   if(serie&&serie.length){
@@ -352,7 +376,6 @@ function setTabelaLucro(lista){
   if(!t) return;
   if(!lista||!lista.length){ t.innerHTML='<div class="note">Sem margens. Guarde MB → lucro MT acima.</div>'; return; }
   t.innerHTML=lista.map(x=>'<div style="padding:6px 0;border-bottom:1px solid var(--line)">📦 <b>'+x.mb+' MB</b> → 💰 <b>'+x.mt+' MT</b> lucro</div>').join('');
-}
 }
 // init from Android
 try{ Android.onUiReady&&Android.onUiReady(); }catch(e){}

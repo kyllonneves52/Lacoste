@@ -864,6 +864,9 @@ public class UssdAccessibilityService extends AccessibilityService {
                             )
             );
 
+            // Registo de diagnóstico independente; não altera a sequência USSD.
+            UssdSessionAudit.record(this, numeroTentativa, tipoOperacaoAtual.name(), estado.name(), norm);
+
 
             if (norm.contains(
                     KW_CRED_PROMO_INTERSTICIAL

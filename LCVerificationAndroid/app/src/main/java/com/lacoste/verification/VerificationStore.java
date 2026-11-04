@@ -25,12 +25,6 @@ public final class VerificationStore {
 
     public static void setToken(Context c, String x) { p(c).edit().putString("token", x == null ? "" : x).apply(); }
     public static String token(Context c) { return p(c).getString("token", ""); }
-    public static void setLicense(Context c, String x) { p(c).edit().putString("license", x == null ? "" : x).apply(); }
-    public static String license(Context c) { return p(c).getString("license", ""); }
-    public static void setRequestId(Context c, String x) { p(c).edit().putString("request", x == null ? "" : x).apply(); }
-    public static String requestId(Context c) { return p(c).getString("request", ""); }
-    public static void setExpires(Context c, String x) { p(c).edit().putString("expires", x == null ? "" : x).apply(); }
-    public static String expires(Context c) { return p(c).getString("expires", ""); }
 
     public static void setMbAndroidId(Context c, String x) { p(c).edit().putString("mb_android_id", x == null ? "" : x.trim()).apply(); }
     public static String mbAndroidId(Context c) { return p(c).getString("mb_android_id", ""); }
@@ -61,6 +55,10 @@ public final class VerificationStore {
     }
 
     public static void rememberIncoming(Context c, String paymentId, double value, String provider, String text) {
+        rememberIncoming(c, paymentId, value, provider, text, "");
+    }
+
+    public static void rememberIncoming(Context c, String paymentId, double value, String provider, String text, String sender) {
         try {
             JSONArray arr = recentIncoming(c);
             JSONObject o = new JSONObject();
@@ -69,6 +67,7 @@ public final class VerificationStore {
             o.put("value", value);
             o.put("provider", provider);
             o.put("text", text);
+            o.put("sender", sender == null ? "" : sender);
             o.put("at", System.currentTimeMillis());
             JSONArray next = new JSONArray();
             next.put(o);
@@ -87,6 +86,58 @@ public final class VerificationStore {
         } catch (Exception e) {
             return new JSONArray();
         }
+    }
+
+
+    public static synchronized String enqueueSms(Context c, String text, String sender, String paymentId, double amount, String provider) {
+        try {
+            String fingerprint = fingerprint((sender == null ? "" : sender) + "\n" + (text == null ? "" : text));
+            JSONArray old = new JSONArray(p(c).getString("sms_outbox", "[]"));
+            for (int i = 0; i < old.length(); i++) {
+                JSONObject item = old.optJSONObject(i);
+                if (item != null && fingerprint.equals(item.optString("fingerprint"))) return fingerprint;
+            }
+            JSONObject item = new JSONObject();
+            item.put("fingerprint", fingerprint);
+            item.put("text", text == null ? "" : text);
+            item.put("sender", sender == null ? "" : sender);
+            item.put("paymentId", paymentId == null ? "" : paymentId);
+            item.put("amount", amount);
+            item.put("provider", provider == null ? "" : provider);
+            item.put("createdAt", System.currentTimeMillis());
+            JSONArray next = new JSONArray();
+            next.put(item);
+            for (int i = 0; i < old.length() && i < 49; i++) {
+                JSONObject existing = old.optJSONObject(i);
+                if (existing != null) next.put(existing);
+            }
+            p(c).edit().putString("sms_outbox", next.toString()).apply();
+            return fingerprint;
+        } catch (Exception e) { return ""; }
+    }
+
+    private static String fingerprint(String value) throws Exception {
+        java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+        byte[] digest = md.digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        StringBuilder out = new StringBuilder();
+        for (byte b : digest) out.append(String.format(java.util.Locale.US, "%02x", b));
+        return out.toString();
+    }
+
+    public static synchronized JSONArray pendingSms(Context c) {
+        try { return new JSONArray(p(c).getString("sms_outbox", "[]")); }
+        catch (Exception e) { return new JSONArray(); }
+    }
+
+    public static synchronized void removeQueuedSms(Context c, String fingerprint) {
+        try {
+            JSONArray old = pendingSms(c), next = new JSONArray();
+            for (int i = 0; i < old.length(); i++) {
+                JSONObject item = old.optJSONObject(i);
+                if (item != null && !fingerprint.equals(item.optString("fingerprint"))) next.put(item);
+            }
+            p(c).edit().putString("sms_outbox", next.toString()).apply();
+        } catch (Exception ignored) {}
     }
 
     public static JSONObject findRecent(Context c, String paymentId, double value, long maxAgeMs) {

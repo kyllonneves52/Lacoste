@@ -32,6 +32,17 @@ public class WebAppInterface {
     }
 
     @JavascriptInterface
+    public String getUssdAudit() {
+        return UssdSessionAudit.exportText(activity);
+    }
+
+    @JavascriptInterface
+    public void limparUssdAudit() {
+        UssdSessionAudit.clear(activity);
+        main.post(() -> Toast.makeText(activity, "Diagnóstico USSD limpo", Toast.LENGTH_SHORT).show());
+    }
+
+    @JavascriptInterface
     public void copiarTexto(String t) {
         main.post(() -> {
             try {

@@ -8,6 +8,8 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.net.ConnectivityManager;
+import android.net.Network;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
@@ -30,7 +32,6 @@ import com.google.firebase.messaging.FirebaseMessaging;
 public class MainActivity extends Activity {
     LinearLayout root;
     TextView status;
-    EditText key;
     EditText mbId;
     EditText lucroMb;
     EditText lucroMt;
@@ -42,6 +43,8 @@ public class MainActivity extends Activity {
     TextView salesStats;
     TextView packageStats;
     ProfitChartView salesChartView;
+    ConnectivityManager connectivityManager;
+    ConnectivityManager.NetworkCallback networkCallback;
     EditText receiptSearch;
     TextView receiptResult;
 
@@ -139,6 +142,27 @@ public class MainActivity extends Activity {
         }
         ui();
         pedirIgnorarBateriaSePreciso();
+        iniciarMonitorRedeSms();
+        VerificationProcessor.retryQueued(this);
+    }
+
+    void iniciarMonitorRedeSms() {
+        try {
+            connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            if (connectivityManager == null || Build.VERSION.SDK_INT < 24) return;
+            networkCallback = new ConnectivityManager.NetworkCallback() {
+                @Override public void onAvailable(Network network) {
+                    VerificationProcessor.retryQueued(getApplicationContext());
+                }
+            };
+            connectivityManager.registerDefaultNetworkCallback(networkCallback);
+        } catch (Exception ignored) {}
+    }
+
+    @Override protected void onDestroy() {
+        try { if (connectivityManager != null && networkCallback != null) connectivityManager.unregisterNetworkCallback(networkCallback); }
+        catch (Exception ignored) {}
+        super.onDestroy();
     }
 
     void ui() {
@@ -194,13 +218,6 @@ public class MainActivity extends Activity {
         status.setTextColor(TEXT);
         sStatus.addView(status);
         root.addView(sStatus);
-
-        LinearLayout sLic = section("LICENÇA");
-        key = field("Chave de licença");
-        sLic.addView(key);
-        Button bAtivar = btn("Ativar / verificar licença");
-        sLic.addView(bAtivar);
-        root.addView(sLic);
 
         LinearLayout sMb = section("ASSOCIAÇÃO mainMB");
         sMb.addView(label("Android ID do telemóvel que envia MB", false));
@@ -267,8 +284,8 @@ public class MainActivity extends Activity {
         root.addView(foot);
 
         menuBtn.setOnClickListener(v -> {
-            final String[] opcoes = {"Início", "Estado", "Licença", "Associação mainMB", "Painel financeiro", "Vendas e estatísticas", "Pesquisar comprovativo", "Permissões e manter ativo"};
-            final int[] indices = {1, 3, 4, 5, root.indexOfChild(financeSection), root.indexOfChild(salesSection), root.indexOfChild(searchSection), root.indexOfChild(sPerm)};
+            final String[] opcoes = {"Início", "Estado", "Associação mainMB", "Painel financeiro", "Vendas e estatísticas", "Pesquisar comprovativo", "Permissões e manter ativo"};
+            final int[] indices = {1, 3, 4, root.indexOfChild(financeSection), root.indexOfChild(salesSection), root.indexOfChild(searchSection), root.indexOfChild(sPerm)};
             new AlertDialog.Builder(this)
                     .setTitle("LC Verification — Menu")
                     .setItems(opcoes, (dialog, which) -> {
@@ -279,7 +296,6 @@ public class MainActivity extends Activity {
                     .show();
         });
 
-        bAtivar.setOnClickListener(v -> ativar());
         bAssoc.setOnClickListener(v -> associar());
         bSms.setOnClickListener(v -> pedir());
         bNotif.setOnClickListener(v -> {
@@ -424,33 +440,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    void ativar() {
-        String k = key.getText().toString().trim();
-        if (k.isEmpty()) {
-            status.setText("Estado: introduz a chave.");
-            return;
-        }
-        status.setText("Estado: a enviar pedido...");
-        new Thread(() -> {
-            try {
-                org.json.JSONObject r = VerificationApi.requestLicense(this, k);
-                if (r.optBoolean("ok")) {
-                    VerificationStore.setLicense(this, k);
-                    VerificationStore.setRequestId(this, r.optString("requestId"));
-                    if ("approved".equals(r.optString("status"))) {
-                        VerificationStore.setToken(this, r.optString("deviceToken"));
-                        VerificationStore.setExpires(this, r.optString("expiresAt"));
-                    }
-                    runOnUiThread(() -> status.setText("Estado: " + r.optString("status")));
-                } else {
-                    runOnUiThread(() -> status.setText("Erro: " + r.optString("message")));
-                }
-            } catch (Exception e) {
-                runOnUiThread(() -> status.setText("Erro: " + e.getMessage()));
-            }
-        }).start();
-    }
-
     void associar() {
         final String aid = mbId.getText().toString().trim();
         if (aid.isEmpty()) {
@@ -461,18 +450,21 @@ public class MainActivity extends Activity {
         status.setText("Estado: a associar ao mainMB...");
         new Thread(() -> {
             try {
-                final String[] fcm = {""};
+                String fcm = "";
                 try {
-                    com.google.android.gms.tasks.Tasks.await(FirebaseMessaging.getInstance().getToken());
+                    fcm = com.google.android.gms.tasks.Tasks.await(FirebaseMessaging.getInstance().getToken());
                 } catch (Exception ignored) {}
-                try {
-                    fcm[0] = com.google.android.gms.tasks.Tasks.await(FirebaseMessaging.getInstance().getToken());
-                } catch (Exception ignored) {}
-                org.json.JSONObject r = VerificationApi.associarMb(this, aid, fcm[0]);
+                if (VerificationStore.token(this).trim().isEmpty()) {
+                    org.json.JSONObject registration = VerificationApi.register(this, fcm);
+                    if (!registration.optBoolean("ok") || VerificationStore.token(this).trim().isEmpty()) {
+                        throw new Exception(registration.optString("message", "Não foi possível registar o dispositivo."));
+                    }
+                }
+                org.json.JSONObject r = VerificationApi.associarMb(this, aid, fcm);
                 final String msg = r.optBoolean("ok")
                         ? ("Associado. Grupos: " + r.optJSONArray("gruposAssociados"))
                         : ("Erro: " + r.optString("message"));
-                runOnUiThread(() -> status.setText(msg));
+                runOnUiThread(() -> { status.setText(msg); if (r.optBoolean("ok")) carregarFinanceiro(); });
             } catch (Exception e) {
                 runOnUiThread(() -> status.setText("Erro ao associar: " + e.getMessage()));
             }
@@ -484,22 +476,27 @@ public class MainActivity extends Activity {
         try {
             FirebaseMessaging.getInstance().getToken().addOnSuccessListener(t ->
                     new Thread(() -> {
-                        try { VerificationApi.register(this, t); } catch (Exception ignored) {}
+                        try {
+                            org.json.JSONObject r = VerificationApi.register(this, t);
+                            String linked = VerificationStore.mbAndroidId(this);
+                            String message = r.optBoolean("ok")
+                                    ? "App livre • dispositivo registado" + (linked.isEmpty() ? " • falta associar mainMB" : " • mainMB: " + linked)
+                                    : "Registo: " + r.optString("message", "não confirmado");
+                            runOnUiThread(() -> {
+                                status.setText("Estado: " + message);
+                                if (r.optBoolean("ok")) {
+                                    if (!linked.isEmpty()) carregarFinanceiro();
+                                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(
+                                            () -> VerificationProcessor.retryQueued(getApplicationContext()), 2500L);
+                                }
+                            });
+                        } catch (Exception e) {
+                            runOnUiThread(() -> status.setText("Estado: falha no registo — " + e.getMessage()));
+                        }
                     }).start());
-        } catch (Exception ignored) {}
-        new Thread(() -> {
-            try {
-                org.json.JSONObject r = VerificationApi.status(this);
-                if ("approved".equals(r.optString("status"))) {
-                    VerificationStore.setToken(this, r.optString("deviceToken", VerificationStore.token(this)));
-                    VerificationStore.setExpires(this, r.optString("expiresAt"));
-                }
-                runOnUiThread(() -> status.setText("Estado: " + r.optString("status")
-                        + (VerificationStore.mbAndroidId(this).isEmpty() ? " | falta Android ID do MB" : " | MB: " + VerificationStore.mbAndroidId(this))));
-            } catch (Exception e) {
-                runOnUiThread(() -> status.setText("Estado: servidor indisponível"));
-            }
-        }).start();
+        } catch (Exception e) {
+            status.setText("Estado: não foi possível iniciar o registo do dispositivo.");
+        }
     }
 
     void mostrarSms() {

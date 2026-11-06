@@ -23,6 +23,10 @@ public final class VerificationStore {
         return x;
     }
 
+    public static String requestId(Context c) {
+        return deviceId(c);
+    }
+
     public static void setToken(Context c, String x) { p(c).edit().putString("token", x == null ? "" : x).apply(); }
     public static String token(Context c) { return p(c).getString("token", ""); }
 
@@ -87,7 +91,6 @@ public final class VerificationStore {
             return new JSONArray();
         }
     }
-
 
     public static synchronized String enqueueSms(Context c, String text, String sender, String paymentId, double amount, String provider) {
         try {

@@ -373,8 +373,17 @@ public class MonitorService extends Service {
 
         boolean modoTeste = pedido.optBoolean("testMode", false);
 
-        // A verificação de pagamento pertence exclusivamente ao LC Verification.
-        // Este APK recebe apenas pedidos já liberados pelo servidor.
+        // Proteção extra: nunca processar pedido que ainda não foi validado pelo LC Verification.
+        // O servidor só deve enviar pedidos com status pending depois da confirmação do SMS,
+        // mas esta verificação no APK impede envio acidental se a fila contiver um pedido
+        // ainda em waiting_verification ou com paymentVerified=false.
+        boolean paymentVerified = pedido.optBoolean("paymentVerified", true);
+        String verificationStatus = pedido.optString("verificationStatus", "");
+        if (!modoTeste && (!paymentVerified || "pending".equalsIgnoreCase(verificationStatus) || "waiting_verification".equalsIgnoreCase(pedido.optString("status", "")))) {
+            AppLog.add(ctx, TAG, "Pedido " + pedidoId + " IGNORADO: pagamento ainda não verificado pelo LC Verification (paymentVerified=" + paymentVerified + ", verificationStatus=" + verificationStatus + ", status=" + pedido.optString("status", "") + "). Aguardando SMS oficial.");
+            return;
+        }
+
         if (!modoTeste) {
             AppLog.add(ctx, TAG, "Pedido liberado pelo servidor; LC Verification já tratou o pagamento quando exigido.");
         }

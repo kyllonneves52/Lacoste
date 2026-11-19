@@ -242,13 +242,13 @@ public class MainActivity extends Activity {
         lucroMt = field("Lucro em MT (ex.: 2,00)"); financeSection.addView(lucroMt);
         Button saveProfit = btn("Guardar / atualizar pacote"); financeSection.addView(saveProfit);
         financeHistory = label("Histórico de vendas concluídas", false); financeHistory.setTextColor(TEXT); financeSection.addView(financeHistory);
-        root.addView(financeSection);
+        // root.addView(financeSection); // removido painel estatísticas
 
         LinearLayout salesSection = section("VENDAS E ESTATÍSTICAS");
         salesSection.addView(label("Vendas por período, pacotes mais comprados e faturação confirmada.", false));
         salesStats = label("A carregar vendas…", false); salesStats.setTextColor(TEXT); salesSection.addView(salesStats);
         packageStats = label("Pacotes mais comprados", true); salesSection.addView(packageStats);
-        root.addView(salesSection);
+        // root.addView(salesSection); // removido painel estatísticas
 
         LinearLayout searchSection = section("PESQUISAR COMPROVATIVO");
         searchSection.addView(label("Pesquisa exata pela referência registada no servidor.", false));
@@ -284,8 +284,8 @@ public class MainActivity extends Activity {
         root.addView(foot);
 
         menuBtn.setOnClickListener(v -> {
-            final String[] opcoes = {"Início", "Estado", "Associação mainMB", "Painel financeiro", "Vendas e estatísticas", "Pesquisar comprovativo", "Permissões e manter ativo"};
-            final int[] indices = {1, 3, 4, root.indexOfChild(financeSection), root.indexOfChild(salesSection), root.indexOfChild(searchSection), root.indexOfChild(sPerm)};
+            final String[] opcoes = {"Início", "Estado", "Associação", "Pesquisar comprovativo", "Permissões e manter ativo"};
+            final int[] indices = {1, 3, 4, root.indexOfChild(searchSection), root.indexOfChild(sPerm)};
             new AlertDialog.Builder(this)
                     .setTitle("LC Verification — Menu")
                     .setItems(opcoes, (dialog, which) -> {
@@ -312,7 +312,7 @@ public class MainActivity extends Activity {
         scroll.addView(root);
         setContentView(scroll);
         verificar();
-        carregarFinanceiro();
+        // carregarFinanceiro(); // removido painel estatísticas/vendas
     }
 
     void carregarFinanceiro() {

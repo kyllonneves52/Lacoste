@@ -228,15 +228,23 @@ label{font-size:12px;color:var(--mu)}
       <div class="page" id="p-licenca">
         <div class="card">
           <h3>Licença</h3>
-          <div class="val" id="licText" style="color:var(--g);font-size:22px;font-weight:700">—</div>
-          <div class="idrow" style="margin-top:10px"><div class="note" id="androidId" style="margin:0;flex:1;word-break:break-all">ID: —</div><button class="cpid" onclick="copiarId()">📋 Copiar</button></div>
+          <div class="val" id="licText" style="color:var(--g);font-size:22px;font-weight:700;word-break:break-all">—</div>
+          <div class="idrow" style="margin-top:10px">
+            <div class="note" id="licKeyRow" style="margin:0;flex:1;word-break:break-all">LIC: —</div>
+            <button class="cpid" onclick="copiarLic()" aria-label="Copiar LIC">📋 LIC</button>
+          </div>
+          <div class="idrow" style="margin-top:10px">
+            <div class="note" id="androidId" style="margin:0;flex:1;word-break:break-all">ID: —</div>
+            <button class="cpid" onclick="copiarId()" aria-label="Copiar ID">📋 ID</button>
+          </div>
+          <p class="note" style="margin-top:10px">Usa estes botões para copiar ID e LIC e enviar no pedido de activação.</p>
         </div>
       </div>
     </div>
     <nav class="bnav">
       <button class="on" onclick="go('inicio')"><span class="ic">🏠</span>Início</button>
       <button onclick="go('pedidos')"><span class="ic">📦</span>Pedidos</button>
-      <button onclick="go('lucros')"><span class="ic">📈</span>Estatísticas</button>
+      <button onclick="go('licenca')"><span class="ic">🛡️</span>Licença</button>
       <button onclick="try{Android.voltarTransferencias()}catch(e){go('inicio')}"><span class="ic">↩</span>Transferências</button>
     </nav>
   </div>
@@ -269,6 +277,8 @@ bars(document.getElementById('chart7b'),[]);
 var androidIdAtual='';
 function copiarTexto(t){ try{ Android.copiarTexto(t); }catch(e){ try{ navigator.clipboard.writeText(t); }catch(_){} } }
 function copiarId(){ if(androidIdAtual) copiarTexto(androidIdAtual); }
+var licencaAtual='';
+function copiarLic(){ if(licencaAtual) copiarTexto(licencaAtual); else { var t=document.getElementById('licText'); if(t) copiarTexto((t.textContent||'').replace(/^LIC:\s*/,'').trim()); } }
 
 /* Pareamento: o app pede, o bot gera, o Android consulta a API a cada 1s e chama setPareamento */
 function pedirCodigoBot(){
@@ -404,7 +414,7 @@ function filtroPed(tipo,btn){
 }
 
 function setSaldos(s1,s2){ document.getElementById('sim1').textContent=(s1||'—')+' MB'; document.getElementById('sim2').textContent=(s2||'—')+' MB'; }
-function setLicenca(t,id){ androidIdAtual=id||''; document.getElementById('licText').textContent=t||'—'; document.getElementById('androidId').textContent='ID: '+(id||'—'); document.getElementById('gestorId').textContent='ID: '+(id||'—'); }
+function setLicenca(t,id){ androidIdAtual=id||''; licencaAtual=t||''; document.getElementById('licText').textContent=t||'—'; var lk=document.getElementById('licKeyRow'); if(lk) lk.textContent='LIC: '+(t||'—'); document.getElementById('androidId').textContent='ID: '+(id||'—'); document.getElementById('gestorId').textContent='ID: '+(id||'—'); }
 function setLucros(hoje, serie){
   if(hoje!=null) document.getElementById('lucroHoje').textContent=(Math.round(hoje*100)/100)+' MT';
   if(serie&&serie.length){

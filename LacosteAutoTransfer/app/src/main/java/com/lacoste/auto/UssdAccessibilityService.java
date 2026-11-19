@@ -51,6 +51,10 @@ public class UssdAccessibilityService extends AccessibilityService {
     private static final String KW_MMI = "codigo mmi invalido";
     private static final String KW_PROPRIO_NUMERO = "proprio numero";
     private static final String KW_PROPRIO_NUMERO_ALT = "nao estas permitido";
+    private static final String KW_TRANSF_NAO_PERMITIDA = "nao permitida";
+    private static final String KW_TRANSF_NAO_PERMITIDA2 = "transferencia de megas nao permitida";
+    private static final String KW_MINIMO_0_MB = "minimo de 0 mb";
+    private static final String KW_MINIMO_0_MB_ALT = "ficar com um minimo";
 
     private static final String KW_CRED_MENU_PRINCIPAL = "super jackpot";
     private static final String KW_CRED_TRANSFERIR = "transferir credito";
@@ -941,6 +945,10 @@ public class UssdAccessibilityService extends AccessibilityService {
                 || norm.contains(KW_INSUF)
                 || norm.contains(KW_PROPRIO_NUMERO)
                 || norm.contains(KW_PROPRIO_NUMERO_ALT)
+                || norm.contains(KW_TRANSF_NAO_PERMITIDA)
+                || norm.contains(KW_TRANSF_NAO_PERMITIDA2)
+                || norm.contains(KW_MINIMO_0_MB)
+                || norm.contains(KW_MINIMO_0_MB_ALT)
                 || norm.contains(KW_INTERNET)
                 || norm.contains(KW_TRANSFERIR)
                 || norm.contains(KW_SALDO_DLG)
@@ -1066,6 +1074,21 @@ public class UssdAccessibilityService extends AccessibilityService {
                     "PROPRIO_NUMERO"
             );
 
+            return;
+        }
+
+        if (norm.contains(KW_TRANSF_NAO_PERMITIDA)
+                || norm.contains(KW_TRANSF_NAO_PERMITIDA2)
+                || norm.contains(KW_MINIMO_0_MB)
+                || norm.contains(KW_MINIMO_0_MB_ALT)) {
+
+            clicarOK(root);
+            clicarPorId(root, "android:id/button1");
+            clicarPorTexto(root, "ok");
+            clicarPorTexto(root, "sim");
+
+            Log.w(TAG, "Transferencia nao permitida (minimo residual). Dialog fechado.");
+            finalizarComErro("TRANSFERENCIA_NAO_PERMITIDA_MINIMO_0MB");
             return;
         }
 
@@ -1583,17 +1606,39 @@ public class UssdAccessibilityService extends AccessibilityService {
     private void clicarOK(
             AccessibilityNodeInfo root) {
 
-        if (clicarPorTexto(
-                root,
-                KW_OK
-        )) {
-            return;
+        if (clicarPorTexto(root, KW_OK)) return;
+        if (clicarPorTexto(root, "ok")) return;
+        if (clicarPorTexto(root, "sim")) return;
+        if (clicarPorTexto(root, "continuar")) return;
+        if (clicarPorId(root, "android:id/button1")) return;
+        if (clicarPorId(root, "com.android.phone:id/button1")) return;
+        try {
+            java.util.List<AccessibilityNodeInfo> nodes =
+                    root.findAccessibilityNodeInfosByText("OK");
+            if (nodes != null) {
+                for (AccessibilityNodeInfo n : nodes) {
+                    if (n == null) continue;
+                    try {
+                        if (n.isClickable() && n.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                            return;
+                        }
+                        AccessibilityNodeInfo pai = n.getParent();
+                        if (pai != null) {
+                            try {
+                                if (pai.isClickable() && pai.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                                    return;
+                                }
+                            } finally {
+                                pai.recycle();
+                            }
+                        }
+                    } finally {
+                        n.recycle();
+                    }
+                }
+            }
+        } catch (Exception ignored) {
         }
-
-        clicarPorId(
-                root,
-                "android:id/button1"
-        );
     }
 
 

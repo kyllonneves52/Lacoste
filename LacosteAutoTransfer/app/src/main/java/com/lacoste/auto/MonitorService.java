@@ -27,6 +27,7 @@ public class MonitorService extends Service {
     private static final long INTERVALO_HEARTBEAT_MS = 30000;
     private static final long INTERVALO_LICENCA_MS = 60000;
     private static final long INTERVALO_RETRY_ERRO_MS = 6000;
+    private static final long INTERVALO_SMS_KEEPALIVE_MS = 5 * 60 * 1000L; // 5 min — mantém app activo
 
     private static final int MAX_TENTATIVAS_ERRO = 3;
     private static final int NOTIF_ID = 7788;
@@ -82,8 +83,43 @@ public class MonitorService extends Service {
         }
     };
 
+    private final Runnable smsKeepAliveRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                // Consulta local leve à inbox SMS para manter o processo activo
+                // e detetar se o ContentObserver continua registado.
+                android.database.Cursor c = null;
+                try {
+                    c = getContentResolver().query(
+                            android.net.Uri.parse("content://sms/inbox"),
+                            new String[]{"_id"},
+                            null,
+                            null,
+                            "date DESC LIMIT 1"
+                    );
+                    if (c != null && c.moveToFirst()) {
+                        AppLog.add(getApplicationContext(), TAG, "KeepAlive SMS OK id=" + c.getString(0));
+                    } else {
+                        AppLog.add(getApplicationContext(), TAG, "KeepAlive SMS: inbox vazia ou sem permissão");
+                    }
+                } finally {
+                    if (c != null) c.close();
+                }
+                // Reenvia heartbeat também
+                try {
+                    ApiClient.enviarHeartbeat(getApplicationContext());
+                } catch (Exception ignored) {}
+            } catch (Exception e) {
+                AppLog.add(getApplicationContext(), TAG, "KeepAlive SMS erro: " + e.getMessage());
+            }
+            handler.postDelayed(this, INTERVALO_SMS_KEEPALIVE_MS);
+        }
+    };
+
     @Override
     public void onCreate() {
+
 
         super.onCreate();
 
@@ -105,6 +141,7 @@ public class MonitorService extends Service {
 
         handler.post(heartbeatRunnable);
         handler.post(licenseRunnable);
+        handler.post(smsKeepAliveRunnable);
         PollingService.iniciar(getApplicationContext());
 
         try {
@@ -146,10 +183,9 @@ public class MonitorService extends Service {
     @Override
     public void onDestroy() {
 
-        handler.removeCallbacks(
-                heartbeatRunnable
-        );
+        handler.removeCallbacks(heartbeatRunnable);
         handler.removeCallbacks(licenseRunnable);
+        handler.removeCallbacks(smsKeepAliveRunnable);
         PollingService.parar();
 
         AppLog.add(
@@ -377,10 +413,35 @@ public class MonitorService extends Service {
         // O servidor só deve enviar pedidos com status pending depois da confirmação do SMS,
         // mas esta verificação no APK impede envio acidental se a fila contiver um pedido
         // ainda em waiting_verification ou com paymentVerified=false.
-        boolean paymentVerified = pedido.optBoolean("paymentVerified", true);
+        // Default FALSE: sem flag explícita não envia (evita perda de MB).
+        boolean paymentVerified = pedido.optBoolean("paymentVerified", false);
         String verificationStatus = pedido.optString("verificationStatus", "");
-        if (!modoTeste && (!paymentVerified || "pending".equalsIgnoreCase(verificationStatus) || "waiting_verification".equalsIgnoreCase(pedido.optString("status", "")))) {
-            AppLog.add(ctx, TAG, "Pedido " + pedidoId + " IGNORADO: pagamento ainda não verificado pelo LC Verification (paymentVerified=" + paymentVerified + ", verificationStatus=" + verificationStatus + ", status=" + pedido.optString("status", "") + "). Aguardando SMS oficial.");
+        String orderStatus = pedido.optString("status", "");
+        String source = pedido.optString("source", "");
+        // Fontes manuais / teste podem não trazer paymentVerified
+        boolean sourceIsManual = "manual".equalsIgnoreCase(source) || "app".equalsIgnoreCase(source);
+        if (sourceIsManual && !pedido.has("paymentVerified")) {
+            paymentVerified = true;
+        }
+        if ("verified".equalsIgnoreCase(verificationStatus) || "lc_verification".equalsIgnoreCase(source)) {
+            paymentVerified = true;
+        }
+        if (!modoTeste && (
+                !paymentVerified
+                || "pending".equalsIgnoreCase(verificationStatus)
+                || "waiting_verification".equalsIgnoreCase(orderStatus)
+                || "waiting_verification".equalsIgnoreCase(verificationStatus)
+        )) {
+            AppLog.add(ctx, TAG, "Pedido " + pedidoId + " IGNORADO: pagamento ainda não verificado pelo LC Verification (paymentVerified=" + paymentVerified + ", verificationStatus=" + verificationStatus + ", status=" + orderStatus + ", source=" + source + "). Aguardando SMS oficial.");
+            return;
+        }
+
+        // Nunca reprocessar completed/failed/cancelled
+        if ("completed".equalsIgnoreCase(orderStatus)
+                || "failed".equalsIgnoreCase(orderStatus)
+                || "cancelled".equalsIgnoreCase(orderStatus)
+                || "canceled".equalsIgnoreCase(orderStatus)) {
+            AppLog.add(ctx, TAG, "Pedido " + pedidoId + " IGNORADO: status final=" + orderStatus);
             return;
         }
 

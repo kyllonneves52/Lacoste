@@ -409,34 +409,11 @@ public class MonitorService extends Service {
 
         boolean modoTeste = pedido.optBoolean("testMode", false);
 
-        // Proteção extra: nunca processar pedido que ainda não foi validado pelo LC Verification.
-        // O servidor só deve enviar pedidos com status pending depois da confirmação do SMS,
-        // mas esta verificação no APK impede envio acidental se a fila contiver um pedido
-        // ainda em waiting_verification ou com paymentVerified=false.
-        // Default FALSE: sem flag explícita não envia (evita perda de MB).
-        boolean paymentVerified = pedido.optBoolean("paymentVerified", false);
-        String verificationStatus = pedido.optString("verificationStatus", "");
+        // Fluxo original restaurado:
+        // - sms off / sem verificação → paymentVerified vem true (ou ausente = true)
+        // - sms on → só processa se verified / não waiting_verification
+        // - nunca reprocessa completed/failed/cancelled
         String orderStatus = pedido.optString("status", "");
-        String source = pedido.optString("source", "");
-        // Fontes manuais / teste podem não trazer paymentVerified
-        boolean sourceIsManual = "manual".equalsIgnoreCase(source) || "app".equalsIgnoreCase(source);
-        if (sourceIsManual && !pedido.has("paymentVerified")) {
-            paymentVerified = true;
-        }
-        if ("verified".equalsIgnoreCase(verificationStatus) || "lc_verification".equalsIgnoreCase(source)) {
-            paymentVerified = true;
-        }
-        if (!modoTeste && (
-                !paymentVerified
-                || "pending".equalsIgnoreCase(verificationStatus)
-                || "waiting_verification".equalsIgnoreCase(orderStatus)
-                || "waiting_verification".equalsIgnoreCase(verificationStatus)
-        )) {
-            AppLog.add(ctx, TAG, "Pedido " + pedidoId + " IGNORADO: pagamento ainda não verificado pelo LC Verification (paymentVerified=" + paymentVerified + ", verificationStatus=" + verificationStatus + ", status=" + orderStatus + ", source=" + source + "). Aguardando SMS oficial.");
-            return;
-        }
-
-        // Nunca reprocessar completed/failed/cancelled
         if ("completed".equalsIgnoreCase(orderStatus)
                 || "failed".equalsIgnoreCase(orderStatus)
                 || "cancelled".equalsIgnoreCase(orderStatus)
@@ -445,8 +422,20 @@ public class MonitorService extends Service {
             return;
         }
 
+        boolean paymentVerified = pedido.optBoolean("paymentVerified", true);
+        String verificationStatus = pedido.optString("verificationStatus", "");
+        if (!modoTeste && (
+                !paymentVerified
+                || "pending".equalsIgnoreCase(verificationStatus)
+                || "waiting_verification".equalsIgnoreCase(orderStatus)
+                || "waiting_verification".equalsIgnoreCase(verificationStatus)
+        )) {
+            AppLog.add(ctx, TAG, "Pedido " + pedidoId + " IGNORADO: pagamento ainda não verificado (paymentVerified=" + paymentVerified + ", verificationStatus=" + verificationStatus + ", status=" + orderStatus + ").");
+            return;
+        }
+
         if (!modoTeste) {
-            AppLog.add(ctx, TAG, "Pedido liberado pelo servidor; LC Verification já tratou o pagamento quando exigido.");
+            AppLog.add(ctx, TAG, "Pedido liberado; a processar transferência.");
         }
 
         if (processandoPedido) {
